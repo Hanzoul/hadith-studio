@@ -97,12 +97,13 @@ function fill(d, t, dur, c, o = {}) {
   return addItem({ k: 'fill', d, p2d: new Path2D(d), t, dur, c, bb: [x0, y0, x1, y1], tf: o.tf, g: o.g, hideAt: o.hideAt, alpha: o.alpha ?? .85 });
 }
 let TEXTCTX;
+var TEXT_DIR = (typeof TEXT_DIR !== 'undefined' && TEXT_DIR) || 'rtl';
 function text(s, x, y, t, dur, o = {}) {
-  const size = o.size || 64, font = o.font || 'ruqaa';
-  const fam = font === 'amiri' ? `"Amiri", "Times New Roman", serif` : font === 'kufi' ? `"Reem Kufi", "Amiri", sans-serif` : `"Aref Ruqaa", "Amiri", serif`;
+  const size = o.size || 64, rtl = (o.dir || TEXT_DIR) !== 'ltr', font = o.font || (rtl ? 'ruqaa' : 'hand');
+  const fam = font === 'amiri' ? `"Amiri", "Times New Roman", serif` : font === 'kufi' ? `"Reem Kufi", "Amiri", sans-serif` : font === 'hand' ? `"Kalam", "Comic Sans MS", cursive` : `"Aref Ruqaa", "Amiri", serif`;
   const f = `${o.weight || 700} ${size}px ${fam}`;
   const lines = s.split('\n');
-  return addItem({ k: 'text', lines, x, y, t, dur, size, f, c: o.c || INK, lh: o.lh || 1.45, tf: o.tf, g: o.g, hideAt: o.hideAt, align: o.align || 'center' });
+  return addItem({ k: 'text', lines, x, y, t, dur, size, f, c: o.c || INK, lh: o.lh || 1.45, tf: o.tf, g: o.g, hideAt: o.hideAt, align: o.align || 'center', rtl });
 }
 function anim(g, t, dur, p) { (FILM.anims[g] = FILM.anims[g] || []).push({ t, dur, ...p }); }
 /* erase: rect in scene coords [x,y,w,h], or full */
@@ -156,16 +157,82 @@ function prep() {
       for (const s of it.st) { const d = (it.dur - travel) * s.L / tot; it.sch.push([tt, tt + d]); tt += d + gap; }
     }
   }
+  // text measuring (needed for auto-clear)
+  const c = document.createElement('canvas').getContext('2d');
+  for (const it of FILM.items) if (it.k === 'text') { c.font = it.f; it.ws = it.lines.map(l => c.measureText(l).width); }
+  autoClear();
   // hand tasks
   const T = [];
   for (const it of FILM.items) if (it.dur > 0.05) T.push({ t0: it.t, t1: it.t + it.dur, it, kind: 'pen' });
   for (const e of FILM.erases) T.push({ t0: e.t, t1: e.t + e.dur, e, kind: 'eraser' });
   T.sort((a, b) => a.t0 - b.t0);
   FILM.tasks = T;
-  // text measuring
-  const c = document.createElement('canvas').getContext('2d');
-  for (const it of FILM.items) if (it.k === 'text') { c.font = it.f; it.ws = it.lines.map(l => c.measureText(l).width); }
 }
+/* ---------- auto-clear: never write text over still-visible text ----------
+   Finds text items whose box overlaps an earlier, still-visible text in the same scene.
+   FILM.collisions = list (for checks). Fix: erase the old text right before (if the hand is free),
+   otherwise the old text disappears at that moment (hideAt). Disable with window.AUTO_CLEAR=false. */
+function textBox(it) {
+  if (!it.ws) return null;
+  const n = it.lines.length; let x0 = 1e9, x1 = -1e9;
+  it.lines.forEach((l, li) => { const w = it.ws[li]; const xr = it.align === 'right' ? it.x : it.align === 'left' ? it.x + w : it.x + w / 2; x0 = Math.min(x0, xr - w); x1 = Math.max(x1, xr); });
+  let b = [x0, it.y - it.size * .8, x1, it.y + (n - 1) * it.size * it.lh + it.size * .3];
+  if (it.tf) { const m = tfMat(it.tf); const P = [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]].map(p => M.ap(m, p[0], p[1])); b = [Math.min(...P.map(p => p[0])), Math.min(...P.map(p => p[1])), Math.max(...P.map(p => p[0])), Math.max(...P.map(p => p[1]))]; }
+  return b;
+}
+function _inter(a, b) { const w = Math.min(a[2], b[2]) - Math.max(a[0], b[0]), h = Math.min(a[3], b[3]) - Math.max(a[1], b[1]); return w > 0 && h > 0 ? [w, h] : null; }
+function _goneAt(it, t) { // is item already removed (hideAt / erase / full erase) at time t?
+  if (it.hideAt != null && it.hideAt <= t) return true;
+  for (const e of FILM.erases) {
+    if (e.sc !== it.sc || e.t < it.t || e.t + e.dur > t + .01) continue;
+    if (e.full) return true;
+    const r = [e.rect[0], e.rect[1], e.rect[0] + e.rect[2], e.rect[1] + e.rect[3]], bb = it._bb; if (!bb) continue;
+    const I = _inter(r, bb); if (I && I[0] * I[1] >= .6 * (bb[2] - bb[0]) * (bb[3] - bb[1])) return true;
+  }
+  return false;
+}
+function _handFree(t0, t1, skip) {
+  for (const it of FILM.items) if (it !== skip && it.dur > .05 && it.t < t1 - .01 && it.t + it.dur > t0 + .01) return false;
+  for (const e of FILM.erases) if (e.t < t1 - .01 && e.t + e.dur > t0 + .01) return false;
+  return true;
+}
+function autoClear() {
+  const TX = FILM.items.filter(it => it.k === 'text' && it.ws);
+  TX.forEach(it => it._bb = textBox(it));
+  FILM.collisions = []; FILM.autoFixes = [];
+  const byT = TX.slice().sort((a, b) => a.t - b.t);
+  for (let j = 0; j < byT.length; j++) {
+    const B = byT[j];
+    for (let i = 0; i < j; i++) {
+      const A = byT[i]; if (A.sc !== B.sc || A === B) continue;
+      const I = _inter(A._bb, B._bb); if (!I) continue;
+      const hA = A._bb[3] - A._bb[1], hB = B._bb[3] - B._bb[1];
+      const aA = (A._bb[2] - A._bb[0]) * hA, aB = (B._bb[2] - B._bb[0]) * hB;
+      if (I[1] < .3 * Math.min(hA, hB) || I[0] * I[1] < .08 * Math.min(aA, aB)) continue;
+      if (_goneAt(A, B.t)) continue;
+      FILM.collisions.push({ sc: B.sc.id, t: +B.t.toFixed(2), text: B.lines.join(' '), over: A.lines.join(' '), overT: +A.t.toFixed(2) });
+      if (typeof window !== 'undefined' && window.AUTO_CLEAR === false) continue;
+      const pad = 14, r = [A._bb[0] - pad, A._bb[1] - pad, A._bb[2] - A._bb[0] + 2 * pad, A._bb[3] - A._bb[1] + 2 * pad];
+      const ed = clamp(.25 + (r[2] * r[3]) / 400000, .35, .8);
+      if (_handFree(B.t - ed - .03, B.t - .01)) {
+        const bw = clamp(Math.min(r[2], r[3]) * 0.45, 24, 110);
+        FILM.erases.push({ sc: A.sc, ox: A.sc.ox, oy: A.sc.oy, rect: r, t: B.t - ed - .02, dur: ed, full: false, bw, auto: true });
+        FILM.erases.sort((a, b) => a.t - b.t);
+        A.hideAt = B.t - .01; FILM.autoFixes.push('erase ' + A.lines.join(' ').slice(0, 30) + ' @' + (B.t - ed).toFixed(2));
+      } else if (B.dur >= .8 && _handFree(B.t, B.t + Math.min(ed, B.dur * .35) + .02, B)) {
+        // no free time before: use the beginning of B's writing time to erase first
+        const e2 = Math.min(ed, B.dur * .35), bw = clamp(Math.min(r[2], r[3]) * 0.45, 24, 110);
+        FILM.erases.push({ sc: A.sc, ox: A.sc.ox, oy: A.sc.oy, rect: r, t: B.t, dur: e2, full: false, bw, auto: true });
+        FILM.erases.sort((a, b) => a.t - b.t);
+        A.hideAt = B.t + e2; B.t += e2 + .02; B.dur -= e2 + .02;
+        FILM.autoFixes.push('erase(in) ' + A.lines.join(' ').slice(0, 30) + ' @' + (B.t - e2).toFixed(2));
+      } else {
+        A.hideAt = B.t; FILM.autoFixes.push('hide ' + A.lines.join(' ').slice(0, 30) + ' @' + B.t.toFixed(2));
+      }
+    }
+  }
+}
+
 
 /* position of the pen while working on a task at time t (scene-world coords) */
 function taskPos(task, t) {
@@ -199,7 +266,7 @@ function taskPos(task, t) {
     while (li < it.ws.length - 1 && acc > it.ws[li]) { acc -= it.ws[li]; li++; }
     const w = it.ws[li]; const xr = it.align === 'right' ? it.x : it.align === 'left' ? it.x + w : it.x + w / 2;
     const y = it.y + li * it.size * it.lh;
-    const px = xr - acc; const py = y - it.size * .28 + Math.sin(acc * .09) * it.size * .22;
+    const px = it.rtl === false ? xr - w + acc : xr - acc; const py = y - it.size * .28 + Math.sin(acc * .09) * it.size * .22;
     return M.ap(m, px, py);
   }
   if (it.k === 'fill') {
@@ -306,13 +373,17 @@ function drawItem(ctx, it, t, cam) {
   } else if (it.k === 'text') {
     const u = clamp((t - it.t) / it.dur, 0, 1);
     const tot = it.ws.reduce((a, b) => a + b, 0); let acc = u * tot;
-    ctx.font = it.f; ctx.fillStyle = it.c; ctx.textBaseline = 'alphabetic'; ctx.direction = 'rtl';
+    const ltr = it.rtl === false;
+    ctx.font = it.f; ctx.fillStyle = it.c; ctx.textBaseline = 'alphabetic'; ctx.direction = ltr ? 'ltr' : 'rtl';
     it.lines.forEach((l, li) => {
       const w = it.ws[li]; const xr = it.align === 'right' ? it.x : it.align === 'left' ? it.x + w : it.x + w / 2;
       const y = it.y + li * it.size * it.lh; const show = clamp(acc, 0, w); acc -= w;
       if (show <= 0) return;
-      ctx.save(); ctx.beginPath(); ctx.rect(xr - show - 4, y - it.size * 1.6, show + 12, it.size * 2.4); ctx.clip();
-      ctx.textAlign = 'right'; ctx.fillText(l, xr, y); ctx.restore();
+      ctx.save(); ctx.beginPath();
+      if (ltr) ctx.rect(xr - w - 8, y - it.size * 1.6, show + 12, it.size * 2.4); else ctx.rect(xr - show - 4, y - it.size * 1.6, show + 12, it.size * 2.4);
+      ctx.clip();
+      if (ltr) { ctx.textAlign = 'left'; ctx.fillText(l, xr - w, y); } else { ctx.textAlign = 'right'; ctx.fillText(l, xr, y); }
+      ctx.restore();
     });
   }
   ctx.restore();

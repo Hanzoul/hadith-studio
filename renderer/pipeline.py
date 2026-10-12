@@ -162,7 +162,8 @@ try{{buildFilm();initRenderer(document.getElementById('cv'));window.renderAt=t=>
 
 
 CHECK_JS = """()=>{const T=FILM.tasks,o=[];for(let i=1;i<T.length;i++)for(let j=i-1;j>=Math.max(0,i-6);j--)if(T[i].t0<T[j].t1-0.02){const sc=x=>x.it?x.it.sc.id:x.e.sc.id;o.push(sc(T[i])+': item at '+T[i].t0.toFixed(2)+' starts before previous task ends ('+T[j].t0.toFixed(2)+'-'+T[j].t1.toFixed(2)+')')}
-const S=FILM.scenes.map(s=>({id:s.id,t0:s.t0,t1:s.t1,title:s.title,desc:s.desc}));return {overlaps:o,scenes:S}}"""
+(FILM.collisions||[]).forEach(c=>o.push(c.sc+': text "'+c.text.slice(0,40)+'" at '+c.t+' is written OVER still-visible text "'+c.over.slice(0,40)+'" (from '+c.overT+'). Never write on top of existing content: move it to a free area, or erase the old text first with erase([x,y,w,h], t, dur) when the hand is free, or start a new scene.'));
+const S=FILM.scenes.map(s=>({id:s.id,t0:s.t0,t1:s.t1,title:s.title,desc:s.desc}));return {overlaps:o,scenes:S,autofix:FILM.autoFixes||[]}}"""
 
 
 async def _open(pw, job):
