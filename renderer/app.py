@@ -5,7 +5,8 @@ POST /jobs                 JSON {title, script, audio_b64 (str|list), audio_form
 POST /jobs/upload          multipart: file=<audio>, title, script, ...
 GET  /jobs/{id}            status + file URLs
 GET  /files/{id}/{path}    download (video.mp4, stories/story_01.mp4, storyboard.json ...)
-POST /topics/import        multipart: file=<pdf>  -> topics extracted with Claude
+POST /topics/import        multipart: file=<pdf>  -> background import (Claude reads the PDF pages)
+GET  /topics/import/status  progress
 GET  /topics/next          next unused topic (marks it 'used')
 GET  /topics               list
 """
@@ -158,43 +159,79 @@ def db():
     return c
 
 
-TOPIC_PROMPT = """You extract hadiths from a book page dump. Return ONLY a JSON array. Each element:
-{"title": short Arabic title (3-6 words), "text": the hadith text exactly as written in the source (keep tashkeel if present), "source": the takhrij exactly as written in the source (e.g. رواه البخاري ومسلم) or "" if none is written, "note": grading/remarks exactly as in the source or ""}
-Rules: copy text verbatim, never correct, complete or invent hadith wording, sources or gradings. Skip commentary-only paragraphs. If nothing is found return []."""
+TOPIC_PROMPT = """You extract hadiths from PDF pages. Return ONLY a JSON array. Each element:
+{"num": the hadith number printed in the source or null, "title": short Arabic title (3-6 words), "text": the hadith text exactly as written in the source (keep tashkeel if present), "source": the takhrij exactly as written in the source (e.g. رواه البخاري ومسلم) or "" if none is written, "note": grading/remarks exactly as in the source or ""}
+Rules: copy text verbatim, never correct, complete or invent hadith wording, sources or gradings. Skip tables of contents and commentary-only paragraphs. If nothing is found return []."""
+
+IMPORT = {"running": False, "done": 0, "total": 0, "imported": 0, "error": ""}
+PAGES_PER_CALL = 4
+
+
+def _import_worker(path):
+    import base64, io
+    from pypdf import PdfReader, PdfWriter
+    try:
+        reader = PdfReader(str(path))
+        n = len(reader.pages)
+        IMPORT.update(total=(n + PAGES_PER_CALL - 1) // PAGES_PER_CALL, done=0, imported=0, error="")
+        seen = set()
+        c = db()
+        for r in c.execute("select text from topics"):
+            seen.add(re.sub(r"\s+", "", r[0] or ""))
+        for a in range(0, n, PAGES_PER_CALL):
+            w = PdfWriter()
+            for i in range(a, min(a + PAGES_PER_CALL, n)):
+                w.add_page(reader.pages[i])
+            buf = io.BytesIO(); w.write(buf)
+            msg = [{"role": "user", "content": [
+                {"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": base64.b64encode(buf.getvalue()).decode()}},
+                {"type": "text", "text": "Extract every hadith on these pages as the JSON array."}]}]
+            found = []
+            for attempt in range(3):
+                try:
+                    out = pipeline.claude(TOPIC_PROMPT, msg, max_tokens=16000)
+                    m = re.search(r"\[.*\]", out, re.S)
+                    found = json.loads(m.group(0)) if m else []
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        raise
+                    time.sleep(10)
+            for h in found:
+                key = re.sub(r"\s+", "", h.get("text") or "")
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                c.execute("insert into topics(title,text,source,note) values(?,?,?,?)", (h.get("title", ""), h.get("text", ""), h.get("source", ""), h.get("note", "")))
+                IMPORT["imported"] += 1
+            c.commit()
+            IMPORT["done"] += 1
+    except Exception as e:
+        traceback.print_exc()
+        IMPORT["error"] = str(e)[:300]
+    finally:
+        path.unlink(missing_ok=True)
+        IMPORT["running"] = False
 
 
 @app.post("/topics/import")
 async def import_pdf(file: UploadFile = File(...), x_api_key: str = Header(None)):
     auth(x_api_key)
-    from pypdf import PdfReader
+    if IMPORT["running"]:
+        raise HTTPException(409, "Es läuft schon ein Import. Bitte warten.")
     tmp = DATA / f"import-{uuid.uuid4().hex}.pdf"
     with open(tmp, "wb") as f:
         shutil.copyfileobj(file.file, f)
-    pages = [(p.extract_text() or "") for p in PdfReader(str(tmp)).pages]
-    tmp.unlink(missing_ok=True)
-    if not "".join(pages).strip():
-        raise HTTPException(422, "PDF enthält keinen auslesbaren Text (gescanntes PDF?). Bitte eine Text-PDF verwenden.")
-    found = []
-    chunk, size = [], 0
-    def flush():
-        if not chunk:
-            return
-        out = pipeline.claude(TOPIC_PROMPT, [{"role": "user", "content": "\n\n".join(chunk)}], max_tokens=16000)
-        m = re.search(r"\[.*\]", out, re.S)
-        if m:
-            found.extend(json.loads(m.group(0)))
-    for t in pages:
-        chunk.append(t)
-        size += len(t)
-        if size > 12000:
-            flush(); chunk, size = [], 0
-    flush()
-    c = db()
-    for h in found:
-        c.execute("insert into topics(title,text,source,note) values(?,?,?,?)", (h.get("title", ""), h.get("text", ""), h.get("source", ""), h.get("note", "")))
-    c.commit()
-    n = c.execute("select count(*) from topics where state='new'").fetchone()[0]
-    return {"imported": len(found), "open_topics": n}
+    IMPORT.update(running=True, done=0, total=0, imported=0, error="")
+    threading.Thread(target=_import_worker, args=(tmp,), daemon=True).start()
+    return {"started": True}
+
+
+@app.get("/topics/import/status")
+def import_status(x_api_key: str = Header(None)):
+    auth(x_api_key)
+    n = db().execute("select count(*) from topics where state='new'").fetchone()[0]
+    return {**IMPORT, "open_topics": n}
 
 
 @app.get("/topics/next")
@@ -235,15 +272,18 @@ table{width:100%;border-collapse:collapse;margin-top:20px;font-size:14px}td,th{b
 #msg{margin-top:12px;font-weight:600;color:#2e5a46}</style></head><body dir="ltr">
 <h1>Hadith Studio – Themenliste</h1><p>PDF hochladen: Die Hadithe werden ausgelesen und der Reihe nach alle 2 Stunden verfilmt.</p>
 <label for="tk">Zugangsschlüssel (RENDER_TOKEN)</label><input id="tk" type="password">
-<label for="f">PDF-Datei (Text-PDF, kein Scan)</label><input id="f" type="file" accept="application/pdf">
+<label for="f">PDF-Datei</label><input id="f" type="file" accept="application/pdf">
 <button id="go">Hochladen und auslesen</button> <button id="ls">Liste anzeigen</button><div id="msg"></div><table id="t"></table>
 <script>
 const $=id=>document.getElementById(id);try{$('tk').value=localStorage.getItem('tk')||''}catch(e){}
 const H=()=>{try{localStorage.setItem('tk',$('tk').value)}catch(e){};return {'X-API-Key':$('tk').value}};
 $('go').onclick=async()=>{const f=$('f').files[0];if(!f){$('msg').textContent='Bitte eine PDF wählen.';return}
-$('msg').textContent='Wird ausgelesen… (kann einige Minuten dauern)';const fd=new FormData();fd.append('file',f);
+$('msg').textContent='Wird hochgeladen…';const fd=new FormData();fd.append('file',f);
 const r=await fetch('/topics/import',{method:'POST',headers:H(),body:fd});const j=await r.json();
-$('msg').textContent=r.ok?`${j.imported} Hadithe übernommen – offen: ${j.open_topics}`:('Fehler: '+(j.detail||r.status));if(r.ok)list()};
+if(!r.ok){$('msg').textContent='Fehler: '+(j.detail||r.status);return}poll()};
+async function poll(){const r=await fetch('/topics/import/status',{headers:H()});const j=await r.json();
+if(j.running){$('msg').textContent=`Wird ausgelesen… Teil ${j.done} von ${j.total||'?'} – bisher ${j.imported} Hadithe`;setTimeout(poll,5000);return}
+$('msg').textContent=j.error?('Fehler: '+j.error+` (bisher ${j.imported} übernommen)`):`Fertig: ${j.imported} Hadithe übernommen – offen: ${j.open_topics}`;list()}
 async function list(){const r=await fetch('/topics',{headers:H()});if(!r.ok){$('msg').textContent='Schlüssel falsch?';return}
 const L=await r.json();const e=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));$('t').innerHTML='<tr><th>#</th><th>Titel</th><th>Quelle</th><th>Status</th></tr>'+L.map(x=>`<tr><td>${x.id}</td><td dir="rtl">${e(x.title)}</td><td dir="rtl">${e(x.source)}</td><td>${x.state==='new'?'offen':'verwendet'}</td></tr>`).join('')}
 $('ls').onclick=list;</script></body></html>"""
