@@ -1,0 +1,17 @@
+# Hadith Studio – Video-Renderer für n8n
+# Start:  docker compose up -d --build
+services:
+  renderer:
+    build: ./renderer
+    container_name: hadith-renderer
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"          # n8n erreicht den Dienst über http://<VPS-IP>:8080 (oder über das Docker-Netz, siehe Anleitung)
+    shm_size: "1gb"          # Chromium braucht gemeinsamen Speicher
+    deploy:
+      resources:
+        limits:
+          memory: 6g

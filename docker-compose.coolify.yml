@@ -1,0 +1,27 @@
+# Für Coolify → "Docker Compose Empty": diesen Inhalt einfügen
+services:
+  hadith-renderer:
+    build:
+      context: https://github.com/Hanzoul/hadith-studio.git#main:renderer
+    environment:
+      - RENDER_TOKEN=${RENDER_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-5-5}
+      - PUBLIC_URL=${PUBLIC_URL}
+      - RENDER_WORKERS=${RENDER_WORKERS:-2}
+      - VIDEO_CRF=28
+      - KEEP_DAYS=7
+    expose:
+      - "8080"
+    volumes:
+      - hadith-data:/data
+    shm_size: "1gb"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  hadith-data:
