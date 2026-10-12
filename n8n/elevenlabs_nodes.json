@@ -1,0 +1,64 @@
+{
+ "nodes": [
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.elevenlabs.io/v1/text-to-speech/DEINE_VOICE_ID?output_format=mp3_44100_128",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ text: $json.chunk, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) }}",
+    "options": {
+     "timeout": 300000,
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 1000
+      }
+     },
+     "response": {
+      "response": {
+       "responseFormat": "file",
+       "outputPropertyName": "data"
+      }
+     }
+    }
+   },
+   "id": "4f30009f-1dbe-45b1-94f5-9c67071cea6f",
+   "name": "Sprechen (ElevenLabs)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    280
+   ]
+  },
+  {
+   "parameters": {
+    "jsCode": "const items = $input.all();\nconst audio = [];\nfor (let i = 0; i < items.length; i++) {\n  const buf = await this.helpers.getBinaryDataBuffer(i, 'data');\n  audio.push(buf.toString('base64'));\n}\nconst first = $('Skript in Abschnitte').first().json;\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: audio,\n  audio_format: 'mp3', language: 'ar', stories: true, vertical: true } }];"
+   },
+   "id": "f8c9e30f-0882-4bc9-be94-5350f090f5d3",
+   "name": "Audio zusammenfügen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1540,
+    280
+   ]
+  }
+ ],
+ "connections": {
+  "Sprechen (ElevenLabs)": {
+   "main": [
+    [
+     {
+      "node": "Audio zusammenfügen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

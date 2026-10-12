@@ -12,7 +12,7 @@
      ]
     }
    },
-   "id": "cbb9ca45-4564-499a-83c8-9e22250595b0",
+   "id": "67a10333-9c61-4cc7-8121-8ebd333baadb",
    "name": "Alle 2 Stunden",
    "type": "n8n-nodes-base.scheduleTrigger",
    "typeVersion": 1.2,
@@ -44,18 +44,6 @@
        "type": "string"
       },
       {
-       "id": "a4",
-       "name": "tts_model",
-       "value": "gemini-2.5-flash-preview-tts",
-       "type": "string"
-      },
-      {
-       "id": "a5",
-       "name": "tts_voice",
-       "value": "Charon",
-       "type": "string"
-      },
-      {
        "id": "a6",
        "name": "telegram_chat_id",
        "value": "DEINE_CHAT_ID",
@@ -83,7 +71,7 @@
     },
     "options": {}
    },
-   "id": "d9529684-8ead-459a-99aa-886f03df0de4",
+   "id": "3a6cc2a8-c551-4580-8adb-74583cb95ac9",
    "name": "Einstellungen",
    "type": "n8n-nodes-base.set",
    "typeVersion": 3.4,
@@ -99,7 +87,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "49dba7cf-7adc-4cd1-8c7d-c10e366c59c4",
+   "id": "b245a1e5-d076-40b8-8215-7c2d84a8e592",
    "name": "Nächstes Thema",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -139,7 +127,7 @@
     },
     "options": {}
    },
-   "id": "792a7df5-cd32-4a48-adbc-96a0c4665ea2",
+   "id": "c5485335-56ce-42b3-98ad-8ab86571b1a2",
    "name": "Thema vorhanden?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -154,7 +142,7 @@
     "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).",
     "additionalFields": {}
    },
-   "id": "5bda59c7-6ad0-4544-bfc5-919ec4c42c08",
+   "id": "60ccc888-ca7d-47f4-9137-0850ded813b4",
    "name": "Liste leer melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -191,7 +179,7 @@
      "timeout": 300000
     }
    },
-   "id": "a9605df7-1b4d-48a2-9102-03cb3c522718",
+   "id": "2b38aff7-c1dc-4416-ae25-4a891c85d66a",
    "name": "Skript schreiben (Claude)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -210,7 +198,7 @@
    "parameters": {
     "jsCode": "const t = $input.first().json.content.map(c => c.text || '').join('').trim();\nconst topic = $('Nächstes Thema').first().json;\n// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source } }));"
    },
-   "id": "b9f55eea-f963-40d9-b6fa-a90bfb44da42",
+   "id": "700be351-6510-4454-b4c7-3eeae93e4141",
    "name": "Skript in Abschnitte",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -222,24 +210,30 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Einstellungen').first().json.tts_model }}:generateContent",
+    "url": "https://api.elevenlabs.io/v1/text-to-speech/DEINE_VOICE_ID?output_format=mp3_44100_128",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"اقرأ هذا النص بالدارجة المغربية بصوت دافئ وهادئ كراوٍ يحكي قصة، بإيقاع طبيعي ووقفات قصيرة بين الفقرات:\\n\\n\" + $json.chunk }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: $('Einstellungen').first().json.tts_voice } } } } }) }}",
+    "jsonBody": "={{ JSON.stringify({ text: $json.chunk, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) }}",
     "options": {
      "timeout": 300000,
      "batching": {
       "batch": {
        "batchSize": 1,
-       "batchInterval": 2000
+       "batchInterval": 1000
+      }
+     },
+     "response": {
+      "response": {
+       "responseFormat": "file",
+       "outputPropertyName": "data"
       }
      }
     }
    },
-   "id": "d0cbcbf3-4737-4515-acbd-eb083b67d96b",
-   "name": "Sprechen (Gemini TTS)",
+   "id": "4f30009f-1dbe-45b1-94f5-9c67071cea6f",
+   "name": "Sprechen (ElevenLabs)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
@@ -249,15 +243,15 @@
    "credentials": {
     "httpHeaderAuth": {
      "id": "",
-     "name": "Gemini (x-goog-api-key)"
+     "name": "ElevenLabs (xi-api-key)"
     }
    }
   },
   {
    "parameters": {
-    "jsCode": "const parts = $input.all().map(i => i.json.candidates[0].content.parts.find(p => p.inlineData).inlineData);\nconst first = $('Skript in Abschnitte').first().json;\nconst fmt = (parts[0].mimeType || '').match(/rate=(\\d+)/);\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: parts.map(p => p.data),\n  audio_format: 'pcm_s16le_' + (fmt ? fmt[1] : '24000'), language: 'ar', stories: true, vertical: true } }];"
+    "jsCode": "const items = $input.all();\nconst audio = [];\nfor (let i = 0; i < items.length; i++) {\n  const buf = await this.helpers.getBinaryDataBuffer(i, 'data');\n  audio.push(buf.toString('base64'));\n}\nconst first = $('Skript in Abschnitte').first().json;\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: audio,\n  audio_format: 'mp3', language: 'ar', stories: true, vertical: true } }];"
    },
-   "id": "e2bb1086-c02d-4856-9bd0-1c9e279fb150",
+   "id": "f8c9e30f-0882-4bc9-be94-5350f090f5d3",
    "name": "Audio zusammenfügen",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -279,7 +273,7 @@
      "timeout": 120000
     }
    },
-   "id": "897729bd-bedf-4aeb-a867-a971b070727a",
+   "id": "3833a62c-ae00-4f47-b1ac-2b753dcf35df",
    "name": "Video bestellen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -299,7 +293,7 @@
     "amount": 5,
     "unit": "minutes"
    },
-   "id": "1484c07f-d475-4620-a0b1-a4ac83959cbe",
+   "id": "36fd6dcb-b9b4-40f2-9662-435229b929fd",
    "name": "5 Minuten warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -307,7 +301,7 @@
     1980,
     280
    ],
-   "webhookId": "fb2d72b7-f9fe-4f4f-b2f2-2f6252c5f465"
+   "webhookId": "18cd8acb-07ed-4daf-ae19-c0990a99770e"
   },
   {
    "parameters": {
@@ -316,7 +310,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "f1bd83ee-ddcc-4527-bd76-bcbb46f3b084",
+   "id": "ec4df99b-3ab4-4914-b86f-5ba926f87c57",
    "name": "Status abfragen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -388,7 +382,7 @@
      "renameFallbackOutput": "läuft noch"
     }
    },
-   "id": "f26d9062-0693-419e-88a3-12e9bda6034b",
+   "id": "c8772451-4211-4379-bb32-479d13e18174",
    "name": "Fertig?",
    "type": "n8n-nodes-base.switch",
    "typeVersion": 3.2,
@@ -403,7 +397,7 @@
     "text": "=⚠️ Video-Fehler bei «{{ $json.title }}»:\n{{ $json.error }}",
     "additionalFields": {}
    },
-   "id": "fd5777fd-692b-4434-a71b-678ef842ca32",
+   "id": "707576ee-a252-43dd-ac9c-76713e974553",
    "name": "Fehler melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -426,7 +420,7 @@
      "disable_web_page_preview": true
     }
    },
-   "id": "4efdd7c3-c256-4027-8dd3-69749028f8c6",
+   "id": "a240ff7c-b25d-46db-9f56-8d193de64d13",
    "name": "Zur Freigabe senden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -450,7 +444,7 @@
     "resumeAmount": 24,
     "resumeUnit": "hours"
    },
-   "id": "c1acb414-6260-48e8-9e80-83b50f169a8b",
+   "id": "c5919404-fb7d-47f1-9df9-f2ea5b46fc2d",
    "name": "Auf Freigabe warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -458,7 +452,7 @@
     2860,
     120
    ],
-   "webhookId": "30d43c64-2ff5-4542-beee-61093d702ddd"
+   "webhookId": "60ee618d-1eed-4646-a5dd-2829d0133b54"
   },
   {
    "parameters": {
@@ -484,7 +478,7 @@
     },
     "options": {}
    },
-   "id": "d3701aa8-ccdc-43ae-801a-2664f83a224c",
+   "id": "5235eb2d-4163-483d-880a-a2e9bcf850ef",
    "name": "Freigegeben?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -498,7 +492,7 @@
     "url": "={{ $('Status abfragen').last().json.urls['social.json'] }}",
     "options": {}
    },
-   "id": "9ced9119-0679-49b4-b80f-b498d325e60a",
+   "id": "44576ebc-94ff-40cc-9b1b-1837fe529d7a",
    "name": "Social-Texte laden",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -511,7 +505,7 @@
    "parameters": {
     "jsCode": "const st = $('Status abfragen').last().json;\nconst s = $input.first().json;\nconst cfg = $('Einstellungen').first().json;\nconst tags = (s.hashtags || []).join(' ') || cfg.hashtags;\nreturn [{ json: {\n  title: (s.youtube_titles && s.youtube_titles[0]) || st.title,\n  yt_description: s.youtube_description || st.title,\n  yt_tags: (s.tags || []).join(','),\n  caption_ig: s.instagram_caption || (st.title + '\\n\\n' + tags),\n  caption_tt: s.tiktok_caption || (st.title + ' ' + tags),\n  caption_fb: s.facebook_caption || (st.title + '\\n\\n' + tags),\n  pinned_comment: s.pinned_comment || '',\n  video_url: st.urls['video.mp4'], vertical_url: st.urls['video_vertical.mp4'] } }];"
    },
-   "id": "10cbe756-0d1c-48c6-9602-27998e5a676d",
+   "id": "470a9489-3249-4a51-9ad6-e89686a8de87",
    "name": "Text für Posts",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -531,7 +525,7 @@
      }
     }
    },
-   "id": "986adbef-45cb-44bb-b8d5-f5c2eb419b1b",
+   "id": "2bfe5223-0579-4a59-bc32-fc22297e6ec8",
    "name": "Video laden (YouTube)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -555,7 +549,7 @@
      "defaultLanguage": "ar"
     }
    },
-   "id": "1f0cc3dc-4970-4934-9d9e-ce0480bff42b",
+   "id": "efa26d98-2f1f-40e7-a645-7e4c75dc32ab",
    "name": "YouTube hochladen",
    "type": "n8n-nodes-base.youTube",
    "typeVersion": 1,
@@ -597,7 +591,7 @@
      "timeout": 300000
     }
    },
-   "id": "8b609b7d-9cad-45eb-beae-c16aa935ff6e",
+   "id": "6be530ca-38ad-4e99-a653-0d4359d6ec58",
    "name": "Facebook-Seite posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -641,7 +635,7 @@
     },
     "options": {}
    },
-   "id": "6f5ea811-e6db-4c22-980c-9ae60274d863",
+   "id": "25917d67-91fa-4416-895b-33b408fb3f68",
    "name": "Instagram Reel anlegen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -661,7 +655,7 @@
     "amount": 3,
     "unit": "minutes"
    },
-   "id": "2ae40c52-dbe5-473e-9728-f20d196c02fe",
+   "id": "46e2ed17-bf4c-4d91-a15a-ddae9d702d69",
    "name": "IG: 3 Min. verarbeiten lassen",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -669,7 +663,7 @@
     3740,
     160
    ],
-   "webhookId": "d1d4e17d-ac3e-4baf-b235-2744ecc9a1bb"
+   "webhookId": "6e719f18-0146-492f-afcb-9f37b5aa11a8"
   },
   {
    "parameters": {
@@ -688,7 +682,7 @@
     },
     "options": {}
    },
-   "id": "1875f8cf-febf-405e-bc75-0f33faf67fb2",
+   "id": "71688108-9ee9-45b9-bddf-2c7a1ff46c01",
    "name": "Instagram veröffentlichen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -714,7 +708,7 @@
     "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.caption_tt.slice(0, 2000), privacy_level: 'SELF_ONLY', disable_comment: false }, source_info: { source: 'PULL_FROM_URL', video_url: $json.vertical_url } }) }}",
     "options": {}
    },
-   "id": "30dd8265-3a83-4840-bfb6-2f79d24b3457",
+   "id": "e393ecb3-6382-41a4-8d0f-81befdb46c87",
    "name": "TikTok posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -737,7 +731,7 @@
     "text": "=🗑️ Verworfen: {{ $('Status abfragen').last().json.title }}. Das Thema kann über /topics/{{ $('Nächstes Thema').first().json.id }}/reset wieder freigegeben werden.",
     "additionalFields": {}
    },
-   "id": "3e5d4b2e-57e6-4282-94b3-57867eb6bb21",
+   "id": "311b8e96-6899-4dc9-b588-df0256e23f73",
    "name": "Verworfen melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -820,14 +814,14 @@
    "main": [
     [
      {
-      "node": "Sprechen (Gemini TTS)",
+      "node": "Sprechen (ElevenLabs)",
       "type": "main",
       "index": 0
      }
     ]
    ]
   },
-  "Sprechen (Gemini TTS)": {
+  "Sprechen (ElevenLabs)": {
    "main": [
     [
      {

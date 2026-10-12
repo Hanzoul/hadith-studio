@@ -3,13 +3,13 @@
 **Ablauf alle 2 Stunden:**
 1. n8n holt den nächsten Hadith aus deiner PDF-Liste.
 2. Claude schreibt ein 4–5-Minuten-Skript auf Darija.
-3. Gemini TTS spricht das Skript.
+3. ElevenLabs spricht das Skript.
 4. Der Renderer zeichnet daraus das Whiteboard-Video: 16:9, 9:16 und Stories.
 5. Du bekommst das Video per **Telegram zur Prüfung**.
 6. Nach deinem ✅ wird es auf YouTube, Facebook, Instagram und TikTok gepostet.
 
 ```
-Zeitplan → Thema → Skript (Claude) → Audio (Gemini) → Renderer → Telegram-Freigabe → YouTube · Facebook · Instagram · TikTok
+Zeitplan → Thema → Skript (Claude) → Audio (ElevenLabs) → Renderer → Telegram-Freigabe → YouTube · Facebook · Instagram · TikTok
 ```
 
 ---
@@ -76,7 +76,7 @@ Die PDF muss **echten Text** enthalten. Gescannte Bilder gehen nicht.
 |---|---|---|
 | Hadith Renderer (X-API-Key) | Header Auth | Name `X-API-Key`, Wert = dein `RENDER_TOKEN` |
 | Anthropic (x-api-key) | Header Auth | Name `x-api-key`, Wert = Claude-API-Schlüssel |
-| Gemini (x-goog-api-key) | Header Auth | Name `x-goog-api-key`, Wert = Schlüssel aus Google AI Studio |
+| ElevenLabs (xi-api-key) | Header Auth | Name `xi-api-key`, Wert = API-Schlüssel von ElevenLabs. Im Knoten „Sprechen (ElevenLabs)“ `DEINE_VOICE_ID` ersetzen |
 | Telegram Bot | Telegram API | Bot-Token von @BotFather |
 | YouTube account | YouTube OAuth2 | Google-Cloud-Projekt mit YouTube Data API v3 |
 | Facebook/Instagram Token (access_token) | Query Auth | Name `access_token`, Wert = langlebiges **Page Access Token** |
@@ -86,7 +86,6 @@ Die PDF muss **echten Text** enthalten. Gescannte Bilder gehen nicht.
    - Telegram-Chat-ID (bekommst du z. B. über @userinfobot);
    - Facebook-Page-ID und Instagram-Business-User-ID;
    - Serienname und Hashtags;
-   - TTS-Modell und Stimme, so wie du sie in AI Studio benutzt.
 4. Zuerst **einmal manuell ausführen** und jeden Schritt ansehen. Erst dann den Workflow aktivieren.
 
 ### Freigabe
@@ -125,7 +124,7 @@ Dateien werden nach `KEEP_DAYS` Tagen gelöscht (Standard 7).
 **Dauer:** Ein 5-Minuten-Video braucht auf KVM 2 grob 20–25 Minuten, auf KVM 4 etwa 10–15 Minuten. Es wird immer nur ein Video gleichzeitig gerendert; weitere warten in der Warteschlange.
 
 ## 6. Kosten (grob)
-Pro Video ein Skript-Aufruf und ein Szenen-Aufruf an Claude, plus Gemini TTS. Die Kosten hängen vom gewählten Modell ab. Bitte in der Anthropic- und Google-Konsole ein **Ausgabenlimit** setzen.
+Pro Video ein Skript-Aufruf und ein Szenen-Aufruf an Claude, plus ElevenLabs (Zeichen-Kontingent deines Abos). Bitte in der Anthropic-Konsole ein **Ausgabenlimit** setzen.
 
 ## 7. Probleme
 - `docker logs -f hadith-renderer`: Protokoll des Renderers.
