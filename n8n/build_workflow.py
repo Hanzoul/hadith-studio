@@ -12,6 +12,13 @@ SCRIPT_PROMPT = r"""أنت كاتب محتوى دعوي مغربي. اكتب ن�
 - الترقيم مهم لأن النص سيُقرأ بصوت آلي: جمل قصيرة، فاصلة عند كل وقفة خفيفة، نقطة في آخر كل جملة، و«…» قبل الأفكار المهمة لوقفة أطول، وسطر فارغ بين الفقرات.
 - اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ."""
 
+TASHKEEL_PROMPT = """أنت مُشكِّل نصوص عربية دقيق. ستتلقى نصاً بالدارجة المغربية مع اقتباسات بالفصحى (حديث نبوي وربما آية).
+أعد النص نفسه حرفاً بحرف، وأضف التشكيل الكامل على كل كلمة: الفتحة والضمة والكسرة والسكون والشدة والتنوين.
+- الفصحى (الحديث والآيات): تشكيل صحيح وفق قواعد العربية.
+- الدارجة المغربية: شكّلها كما تُنطق في المغرب (مثلاً: كَيْدِيرْ، دْيَالْ، بْزَّافْ، هَادْ الشِّي).
+- ممنوع منعاً باتاً تغيير أو حذف أو إضافة أي حرف أو كلمة أو علامة ترقيم أو سطر.
+- لا تكتب أي شرح أو مقدمة، أعد النص المشكول فقط."""
+
 TTS_STYLE_UNUSED = "اقرأ هذا النص بالدارجة المغربية بصوت دافئ وهادئ كراوٍ يحكي قصة، بإيقاع طبيعي ووقفات قصيرة بين الفقرات:\n\n"
 
 
@@ -51,14 +58,36 @@ nodes = [
         "sendBody": True, "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 8000, system: " + json.dumps(SCRIPT_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
         "options": {"timeout": 300000}}, [880, 280], credentials=CRED_CLAUDE),
-    node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const t = $input.first().json.content.map(c => c.text || '').join('').trim();
+    node("Tashkeel (Claude)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.anthropic.com/v1/messages", **HDR_RENDER,
+        "sendHeaders": True, "headerParameters": {"parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]},
+        "sendBody": True, "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 16000, system: " + json.dumps(TASHKEEL_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: $json.content.map(c => c.text || '').join('').trim() }] }) }}",
+        "options": {"timeout": 300000}}, [990, 280], credentials=CRED_CLAUDE),
+    node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const txt = j => (j.content || []).map(c => c.text || '').join('').trim();
+const orig = txt($('Skript schreiben (Claude)').first().json);
+const voc = txt($input.first().json);
+// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben
+const norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');
+function sim(a, b) {
+  if (a === b) return 1;
+  const n = a.length, m = b.length; if (!n || !m) return 0;
+  let prev = Array.from({ length: m + 1 }, (_, j) => j);
+  for (let i = 1; i <= n; i++) { const cur = [i];
+    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur; }
+  return 1 - prev[m] / Math.max(n, m);
+}
+const score = sim(norm(orig), norm(voc));
+const ok = voc && score >= 0.985;
+const t = ok ? voc : orig;
 const topic = $('Nächstes Thema').first().json;
 // TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)
 const paras = t.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
 const chunks = []; let cur = '';
 for (const p of paras) { if ((cur + '\n\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\n\n' + p : p; }
 if (cur) chunks.push(cur);
-return chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source } }));"""}, [1100, 280]),
+return chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,
+  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"""}, [1150, 280]),
     node("Sprechen (ElevenLabs)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST",
         "url": "https://api.elevenlabs.io/v1/text-to-speech/DEINE_VOICE_ID?output_format=mp3_44100_128", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json",
@@ -137,7 +166,8 @@ link("Einstellungen", "Nächstes Thema")
 link("Nächstes Thema", "Thema vorhanden?")
 link("Thema vorhanden?", "Skript schreiben (Claude)", 0)
 link("Thema vorhanden?", "Liste leer melden", 1)
-link("Skript schreiben (Claude)", "Skript in Abschnitte")
+link("Skript schreiben (Claude)", "Tashkeel (Claude)")
+link("Tashkeel (Claude)", "Skript in Abschnitte")
 link("Skript in Abschnitte", "Sprechen (ElevenLabs)")
 link("Sprechen (ElevenLabs)", "Audio zusammenfügen")
 link("Audio zusammenfügen", "Video bestellen")
