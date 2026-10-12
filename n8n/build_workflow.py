@@ -7,6 +7,7 @@ SCRIPT_PROMPT = r"""أنت كاتب محتوى دعوي مغربي. اكتب ن�
 - اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.
 - لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.
 - لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.
+- التشكيل: اكتب نص الحديث والآيات بالتشكيل الكامل (أضف الحركات فقط ولا تغيّر أي حرف أو كلمة). وفي باقي النص شكّل الكلمات الفصحى وكل كلمة قد تُقرأ خطأً، حتى ينطقها القارئ الآلي نطقاً صحيحاً.
 - اختم بخلاصة عملية ودعاء قصير.
 - اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ."""
 
@@ -47,7 +48,7 @@ nodes = [
     node("Skript schreiben (Claude)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.anthropic.com/v1/messages", **HDR_RENDER,
         "sendHeaders": True, "headerParameters": {"parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]},
         "sendBody": True, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 4000, system: " + json.dumps(SCRIPT_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 8000, system: " + json.dumps(SCRIPT_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
         "options": {"timeout": 300000}}, [880, 280], credentials=CRED_CLAUDE),
     node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const t = $input.first().json.content.map(c => c.text || '').join('').trim();
 const topic = $('Nächstes Thema').first().json;

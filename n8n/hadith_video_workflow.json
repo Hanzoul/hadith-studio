@@ -12,7 +12,7 @@
      ]
     }
    },
-   "id": "67a10333-9c61-4cc7-8121-8ebd333baadb",
+   "id": "cb68c464-e6d5-42ac-a1cb-da375568c1e2",
    "name": "Alle 2 Stunden",
    "type": "n8n-nodes-base.scheduleTrigger",
    "typeVersion": 1.2,
@@ -71,7 +71,7 @@
     },
     "options": {}
    },
-   "id": "3a6cc2a8-c551-4580-8adb-74583cb95ac9",
+   "id": "7c705d97-27d0-4832-8cd7-547d7b1bea82",
    "name": "Einstellungen",
    "type": "n8n-nodes-base.set",
    "typeVersion": 3.4,
@@ -87,7 +87,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "b245a1e5-d076-40b8-8215-7c2d84a8e592",
+   "id": "d282b498-040d-4a51-95fe-bb1c1556092e",
    "name": "Nächstes Thema",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -127,7 +127,7 @@
     },
     "options": {}
    },
-   "id": "c5485335-56ce-42b3-98ad-8ab86571b1a2",
+   "id": "145cec51-e98f-4e67-9637-f2aed513ad2e",
    "name": "Thema vorhanden?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -142,7 +142,7 @@
     "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).",
     "additionalFields": {}
    },
-   "id": "60ccc888-ca7d-47f4-9137-0850ded813b4",
+   "id": "3a01a404-f2dd-4ef7-bd1e-2f4c1cfc434d",
    "name": "Liste leer melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -174,12 +174,12 @@
     },
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').first().json.claude_model, max_tokens: 4000, system: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').first().json.claude_model, max_tokens: 8000, system: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- التشكيل: اكتب نص الحديث والآيات بالتشكيل الكامل (أضف الحركات فقط ولا تغيّر أي حرف أو كلمة). وفي باقي النص شكّل الكلمات الفصحى وكل كلمة قد تُقرأ خطأً، حتى ينطقها القارئ الآلي نطقاً صحيحاً.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
     "options": {
      "timeout": 300000
     }
    },
-   "id": "2b38aff7-c1dc-4416-ae25-4a891c85d66a",
+   "id": "95a49c4c-5760-48b8-b92f-48955f3208e6",
    "name": "Skript schreiben (Claude)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -198,7 +198,7 @@
    "parameters": {
     "jsCode": "const t = $input.first().json.content.map(c => c.text || '').join('').trim();\nconst topic = $('Nächstes Thema').first().json;\n// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source } }));"
    },
-   "id": "700be351-6510-4454-b4c7-3eeae93e4141",
+   "id": "761a6dd2-20f4-4316-b115-4f2fd86da97c",
    "name": "Skript in Abschnitte",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -232,7 +232,7 @@
      }
     }
    },
-   "id": "4f30009f-1dbe-45b1-94f5-9c67071cea6f",
+   "id": "624203bf-a342-4519-99ed-66d7abfd7bbd",
    "name": "Sprechen (ElevenLabs)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -251,7 +251,7 @@
    "parameters": {
     "jsCode": "const items = $input.all();\nconst audio = [];\nfor (let i = 0; i < items.length; i++) {\n  const buf = await this.helpers.getBinaryDataBuffer(i, 'data');\n  audio.push(buf.toString('base64'));\n}\nconst first = $('Skript in Abschnitte').first().json;\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: audio,\n  audio_format: 'mp3', language: 'ar', stories: true, vertical: true } }];"
    },
-   "id": "f8c9e30f-0882-4bc9-be94-5350f090f5d3",
+   "id": "345fb635-219d-4db0-b42d-e8b337ef659f",
    "name": "Audio zusammenfügen",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -273,7 +273,7 @@
      "timeout": 120000
     }
    },
-   "id": "3833a62c-ae00-4f47-b1ac-2b753dcf35df",
+   "id": "2713f956-7e3a-44fd-a548-b3a3ace16816",
    "name": "Video bestellen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -293,7 +293,7 @@
     "amount": 5,
     "unit": "minutes"
    },
-   "id": "36fd6dcb-b9b4-40f2-9662-435229b929fd",
+   "id": "b5f31106-6641-4ead-905b-bddf1e589bf8",
    "name": "5 Minuten warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -301,7 +301,7 @@
     1980,
     280
    ],
-   "webhookId": "18cd8acb-07ed-4daf-ae19-c0990a99770e"
+   "webhookId": "0ced0098-dd57-4153-85be-ae968b6d120e"
   },
   {
    "parameters": {
@@ -310,7 +310,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "ec4df99b-3ab4-4914-b86f-5ba926f87c57",
+   "id": "c8c30705-0e48-426c-a01a-40cdb6a54548",
    "name": "Status abfragen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -382,7 +382,7 @@
      "renameFallbackOutput": "läuft noch"
     }
    },
-   "id": "c8772451-4211-4379-bb32-479d13e18174",
+   "id": "958eddf8-2a69-43f8-858b-290c04b0565b",
    "name": "Fertig?",
    "type": "n8n-nodes-base.switch",
    "typeVersion": 3.2,
@@ -397,7 +397,7 @@
     "text": "=⚠️ Video-Fehler bei «{{ $json.title }}»:\n{{ $json.error }}",
     "additionalFields": {}
    },
-   "id": "707576ee-a252-43dd-ac9c-76713e974553",
+   "id": "df2e34c2-78c9-4527-96d7-500260c87417",
    "name": "Fehler melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -420,7 +420,7 @@
      "disable_web_page_preview": true
     }
    },
-   "id": "a240ff7c-b25d-46db-9f56-8d193de64d13",
+   "id": "c755c943-7cad-4181-9dae-3bba8861316c",
    "name": "Zur Freigabe senden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -444,7 +444,7 @@
     "resumeAmount": 24,
     "resumeUnit": "hours"
    },
-   "id": "c5919404-fb7d-47f1-9df9-f2ea5b46fc2d",
+   "id": "7a81be8b-d745-47b7-838c-f20e241c6192",
    "name": "Auf Freigabe warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -452,7 +452,7 @@
     2860,
     120
    ],
-   "webhookId": "60ee618d-1eed-4646-a5dd-2829d0133b54"
+   "webhookId": "c8b1df05-4dbb-428e-8e3b-8716f27b37a3"
   },
   {
    "parameters": {
@@ -478,7 +478,7 @@
     },
     "options": {}
    },
-   "id": "5235eb2d-4163-483d-880a-a2e9bcf850ef",
+   "id": "abe4a06f-8902-4e53-8ad3-e447efb6b000",
    "name": "Freigegeben?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -492,7 +492,7 @@
     "url": "={{ $('Status abfragen').last().json.urls['social.json'] }}",
     "options": {}
    },
-   "id": "44576ebc-94ff-40cc-9b1b-1837fe529d7a",
+   "id": "0ac3386f-f4e6-4227-84af-21ebd40e404c",
    "name": "Social-Texte laden",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -505,7 +505,7 @@
    "parameters": {
     "jsCode": "const st = $('Status abfragen').last().json;\nconst s = $input.first().json;\nconst cfg = $('Einstellungen').first().json;\nconst tags = (s.hashtags || []).join(' ') || cfg.hashtags;\nreturn [{ json: {\n  title: (s.youtube_titles && s.youtube_titles[0]) || st.title,\n  yt_description: s.youtube_description || st.title,\n  yt_tags: (s.tags || []).join(','),\n  caption_ig: s.instagram_caption || (st.title + '\\n\\n' + tags),\n  caption_tt: s.tiktok_caption || (st.title + ' ' + tags),\n  caption_fb: s.facebook_caption || (st.title + '\\n\\n' + tags),\n  pinned_comment: s.pinned_comment || '',\n  video_url: st.urls['video.mp4'], vertical_url: st.urls['video_vertical.mp4'] } }];"
    },
-   "id": "470a9489-3249-4a51-9ad6-e89686a8de87",
+   "id": "29d12272-63c1-4e4a-8c13-3ea8327071be",
    "name": "Text für Posts",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -525,7 +525,7 @@
      }
     }
    },
-   "id": "2bfe5223-0579-4a59-bc32-fc22297e6ec8",
+   "id": "661dc4e8-10ac-4a7b-8655-cb489b0dc7c5",
    "name": "Video laden (YouTube)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -549,7 +549,7 @@
      "defaultLanguage": "ar"
     }
    },
-   "id": "efa26d98-2f1f-40e7-a645-7e4c75dc32ab",
+   "id": "0df080bb-556e-4840-842e-17ff1029730b",
    "name": "YouTube hochladen",
    "type": "n8n-nodes-base.youTube",
    "typeVersion": 1,
@@ -591,7 +591,7 @@
      "timeout": 300000
     }
    },
-   "id": "6be530ca-38ad-4e99-a653-0d4359d6ec58",
+   "id": "527b1210-3279-4eca-a92e-ca7c1fca4c35",
    "name": "Facebook-Seite posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -635,7 +635,7 @@
     },
     "options": {}
    },
-   "id": "25917d67-91fa-4416-895b-33b408fb3f68",
+   "id": "69c3257b-49d3-4fa5-b6d4-d826d4e2d72b",
    "name": "Instagram Reel anlegen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -655,7 +655,7 @@
     "amount": 3,
     "unit": "minutes"
    },
-   "id": "46e2ed17-bf4c-4d91-a15a-ddae9d702d69",
+   "id": "9bbdabf3-36a5-4524-9170-364196212b67",
    "name": "IG: 3 Min. verarbeiten lassen",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -663,7 +663,7 @@
     3740,
     160
    ],
-   "webhookId": "6e719f18-0146-492f-afcb-9f37b5aa11a8"
+   "webhookId": "2cb2f393-2b30-4851-9125-60ce06d424b0"
   },
   {
    "parameters": {
@@ -682,7 +682,7 @@
     },
     "options": {}
    },
-   "id": "71688108-9ee9-45b9-bddf-2c7a1ff46c01",
+   "id": "c9bab44b-fbd1-4403-9a56-620d92d5ffe6",
    "name": "Instagram veröffentlichen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -708,7 +708,7 @@
     "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.caption_tt.slice(0, 2000), privacy_level: 'SELF_ONLY', disable_comment: false }, source_info: { source: 'PULL_FROM_URL', video_url: $json.vertical_url } }) }}",
     "options": {}
    },
-   "id": "e393ecb3-6382-41a4-8d0f-81befdb46c87",
+   "id": "e20942cb-5d06-44bf-ad0c-bec065c926d5",
    "name": "TikTok posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -731,7 +731,7 @@
     "text": "=🗑️ Verworfen: {{ $('Status abfragen').last().json.title }}. Das Thema kann über /topics/{{ $('Nächstes Thema').first().json.id }}/reset wieder freigegeben werden.",
     "additionalFields": {}
    },
-   "id": "311b8e96-6899-4dc9-b588-df0256e23f73",
+   "id": "60f80faa-1980-4c6b-827e-c5c11b5dc141",
    "name": "Verworfen melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
