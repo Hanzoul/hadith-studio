@@ -22,7 +22,7 @@
      "timeout": 300000
     }
    },
-   "id": "c0cb1dcc-9f1a-46ca-b4dc-5cf9aedccb5f",
+   "id": "b17faa62-8b28-41c7-8b75-fc64b50af904",
    "name": "Tashkeel (Claude)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -33,9 +33,9 @@
   },
   {
    "parameters": {
-    "jsCode": "const txt = j => (j.content || []).map(c => c.text || '').join('').trim();\nconst orig = txt($('Skript schreiben (Claude)').first().json);\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = sim(norm(orig), norm(voc));\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : orig;\nconst topic = $('Nächstes Thema').first().json;\n// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
+    "jsCode": "const txt = j => (j.content || []).map(c => c.text || '').join('').trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
    },
-   "id": "32450374-de99-4857-8cdb-86d69197ec59",
+   "id": "3cb156ae-4928-4a10-a4fd-23285f41ef37",
    "name": "Skript in Abschnitte",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,

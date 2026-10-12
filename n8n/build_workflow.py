@@ -64,7 +64,7 @@ nodes = [
         "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 16000, system: " + json.dumps(TASHKEEL_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: $json.content.map(c => c.text || '').join('').trim() }] }) }}",
         "options": {"timeout": 300000}}, [990, 280], credentials=CRED_CLAUDE),
     node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const txt = j => (j.content || []).map(c => c.text || '').join('').trim();
-const orig = txt($('Skript schreiben (Claude)').first().json);
+let orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}
 const voc = txt($input.first().json);
 // Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben
 const norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');
@@ -77,9 +77,9 @@ function sim(a, b) {
     prev = cur; }
   return 1 - prev[m] / Math.max(n, m);
 }
-const score = sim(norm(orig), norm(voc));
+const score = orig ? sim(norm(orig), norm(voc)) : 1;
 const ok = voc && score >= 0.985;
-const t = ok ? voc : orig;
+const t = ok ? voc : (orig || voc);
 const topic = $('Nächstes Thema').first().json;
 // TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)
 const paras = t.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
