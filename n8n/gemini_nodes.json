@@ -1,0 +1,61 @@
+{
+ "nodes": [
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"Read the following Moroccan Darija text aloud as a warm, calm storyteller with an authentic Moroccan accent. Pronounce it exactly as vocalised (with the harakat). Pause naturally at commas and full stops, longer at «…» and between paragraphs. Do not read this instruction aloud.\\n\\n\" + $json.chunk }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Enzo' } } } } }) }}",
+    "options": {
+     "timeout": 600000,
+     "batching": {
+      "batch": {
+       "batchSize": 1,
+       "batchInterval": 3000
+      }
+     }
+    }
+   },
+   "id": "5e8bb1a4-f69d-474a-b7af-cc3ef7f9e800",
+   "name": "Sprechen (Gemini TTS)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    280
+   ],
+   "retryOnFail": true,
+   "maxTries": 3,
+   "waitBetweenTries": 15000
+  },
+  {
+   "parameters": {
+    "jsCode": "const parts = $input.all().map(i => i.json.candidates[0].content.parts.find(p => p.inlineData).inlineData);\nconst first = $('Skript in Abschnitte').first().json;\nconst fmt = (parts[0].mimeType || '').match(/rate=(\\d+)/);\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: parts.map(p => p.data),\n  audio_format: 'pcm_s16le_' + (fmt ? fmt[1] : '24000'), language: 'ar', stories: true, vertical: true } }];"
+   },
+   "id": "2a12fc90-d17f-4767-8f9e-d49e6e652d69",
+   "name": "Audio zusammenfügen",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1540,
+    280
+   ]
+  }
+ ],
+ "connections": {
+  "Sprechen (Gemini TTS)": {
+   "main": [
+    [
+     {
+      "node": "Audio zusammenfügen",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

@@ -19,7 +19,7 @@ TASHKEEL_PROMPT = """أنت مُشكِّل نصوص عربية دقيق. ستت�
 - ممنوع منعاً باتاً تغيير أو حذف أو إضافة أي حرف أو كلمة أو علامة ترقيم أو سطر.
 - لا تكتب أي شرح أو مقدمة، أعد النص المشكول فقط."""
 
-TTS_STYLE_UNUSED = "اقرأ هذا النص بالدارجة المغربية بصوت دافئ وهادئ كراوٍ يحكي قصة، بإيقاع طبيعي ووقفات قصيرة بين الفقرات:\n\n"
+TTS_STYLE = "Read the following Moroccan Darija text aloud as a warm, calm storyteller with an authentic Moroccan accent. Pronounce it exactly as vocalised (with the harakat). Pause naturally at commas and full stops, longer at «…» and between paragraphs. Do not read this instruction aloud.\n\n"
 
 
 def node(name, typ, ver, params, pos, **kw):
@@ -31,7 +31,7 @@ def node(name, typ, ver, params, pos, **kw):
 HDR_RENDER = {"authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth"}
 CRED_RENDER = {"httpHeaderAuth": {"id": "", "name": "Hadith Renderer (X-API-Key)"}}
 CRED_CLAUDE = {"httpHeaderAuth": {"id": "", "name": "Anthropic (x-api-key)"}}
-CRED_ELEVEN = {"httpHeaderAuth": {"id": "", "name": "ElevenLabs (xi-api-key)"}}
+CRED_GEMINI = {"httpHeaderAuth": {"id": "", "name": "Gemini (x-goog-api-key)"}}
 CRED_FB = {"httpQueryAuth": {"id": "", "name": "Facebook/Instagram Token (access_token)"}}
 CRED_TT = {"httpHeaderAuth": {"id": "", "name": "TikTok (Authorization: Bearer …)"}}
 CRED_TG = {"telegramApi": {"id": "", "name": "Telegram Bot"}}
@@ -81,29 +81,25 @@ const score = orig ? sim(norm(orig), norm(voc)) : 1;
 const ok = voc && score >= 0.985;
 const t = ok ? voc : (orig || voc);
 const topic = $('Nächstes Thema').first().json;
-// TTS: ElevenLabs schafft ~10.000 Zeichen, also meist 1 Abschnitt; max. ~9000 Zeichen (an Absatzgrenzen)
+// TTS (Gemini): Abschnitte von max. ~3000 Zeichen (an Absatzgrenzen) (an Absatzgrenzen)
 const paras = t.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
 const chunks = []; let cur = '';
-for (const p of paras) { if ((cur + '\n\n' + p).length > 9000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\n\n' + p : p; }
+for (const p of paras) { if ((cur + '\n\n' + p).length > 3000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\n\n' + p : p; }
 if (cur) chunks.push(cur);
 return chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,
   tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"""}, [1150, 280]),
-    node("Sprechen (ElevenLabs)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST",
-        "url": "https://api.elevenlabs.io/v1/text-to-speech/DEINE_VOICE_ID?output_format=mp3_44100_128", **HDR_RENDER,
+    node("Sprechen (Gemini TTS)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ text: $json.chunk, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) }}",
-        "options": {"timeout": 300000, "batching": {"batch": {"batchSize": 1, "batchInterval": 15000}},
-                    "response": {"response": {"responseFormat": "file", "outputPropertyName": "data"}}}}, [1320, 280], credentials=CRED_ELEVEN, retryOnFail=True, maxTries=3, waitBetweenTries=10000),
-    node("Audio zusammenfügen", "n8n-nodes-base.code", 2, {"jsCode": r"""const items = $input.all();
-const audio = [];
-for (let i = 0; i < items.length; i++) {
-  const buf = await this.helpers.getBinaryDataBuffer(i, 'data');
-  audio.push(buf.toString('base64'));
-}
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: " + json.dumps(TTS_STYLE, ensure_ascii=False) + " + $json.chunk }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Enzo' } } } } }) }}",
+        "options": {"timeout": 600000, "batching": {"batch": {"batchSize": 1, "batchInterval": 3000}}}}, [1320, 280],
+        credentials=CRED_GEMINI, retryOnFail=True, maxTries=3, waitBetweenTries=15000),
+    node("Audio zusammenfügen", "n8n-nodes-base.code", 2, {"jsCode": r"""const parts = $input.all().map(i => i.json.candidates[0].content.parts.find(p => p.inlineData).inlineData);
 const first = $('Skript in Abschnitte').first().json;
+const fmt = (parts[0].mimeType || '').match(/rate=(\d+)/);
 return [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,
-  series: $('Einstellungen').first().json.series, audio_b64: audio,
-  audio_format: 'mp3', language: 'ar', stories: true, vertical: true } }];"""}, [1540, 280]),
+  series: $('Einstellungen').first().json.series, audio_b64: parts.map(p => p.data),
+  audio_format: 'pcm_s16le_' + (fmt ? fmt[1] : '24000'), language: 'ar', stories: true, vertical: true } }];"""}, [1540, 280]),
     node("Video bestellen", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": f"={{{{ {S}.renderer_url }}}}/jobs", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json", "jsonBody": "={{ JSON.stringify($json) }}", "options": {"timeout": 120000}}, [1760, 280], credentials=CRED_RENDER),
     node("5 Minuten warten", "n8n-nodes-base.wait", 1.1, {"amount": 5, "unit": "minutes"}, [1980, 280], webhookId=str(uuid.uuid4())),
@@ -168,8 +164,8 @@ link("Thema vorhanden?", "Skript schreiben (Claude)", 0)
 link("Thema vorhanden?", "Liste leer melden", 1)
 link("Skript schreiben (Claude)", "Tashkeel (Claude)")
 link("Tashkeel (Claude)", "Skript in Abschnitte")
-link("Skript in Abschnitte", "Sprechen (ElevenLabs)")
-link("Sprechen (ElevenLabs)", "Audio zusammenfügen")
+link("Skript in Abschnitte", "Sprechen (Gemini TTS)")
+link("Sprechen (Gemini TTS)", "Audio zusammenfügen")
 link("Audio zusammenfügen", "Video bestellen")
 link("Video bestellen", "5 Minuten warten")
 link("5 Minuten warten", "Status abfragen")
