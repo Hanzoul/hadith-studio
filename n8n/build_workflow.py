@@ -31,6 +31,7 @@ def node(name, typ, ver, params, pos, **kw):
 HDR_RENDER = {"authentication": "genericCredentialType", "genericAuthType": "httpHeaderAuth"}
 CRED_RENDER = {"httpHeaderAuth": {"id": "", "name": "Hadith Renderer (X-API-Key)"}}
 CRED_CLAUDE = {"httpHeaderAuth": {"id": "", "name": "Anthropic (x-api-key)"}}
+CRED_OPENAI = {"httpHeaderAuth": {"id": "", "name": "OpenAI (Authorization: Bearer …)"}}
 CRED_GEMINI = {"httpHeaderAuth": {"id": "", "name": "Gemini (x-goog-api-key)"}}
 CRED_FB = {"httpQueryAuth": {"id": "", "name": "Facebook/Instagram Token (access_token)"}}
 CRED_TT = {"httpHeaderAuth": {"id": "", "name": "TikTok (Authorization: Bearer …)"}}
@@ -53,18 +54,16 @@ nodes = [
     node("Thema vorhanden?", "n8n-nodes-base.if", 2.2, {"conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
         "conditions": [{"id": "c1", "leftValue": "={{ $json.empty }}", "rightValue": "", "operator": {"type": "boolean", "operation": "false", "singleValue": True}}], "combinator": "and"}, "options": {}}, [660, 300]),
     node("Liste leer melden", "n8n-nodes-base.telegram", 1.2, {"chatId": f"={{{{ {S}.telegram_chat_id }}}}", "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).", "additionalFields": {}}, [880, 480], credentials=CRED_TG),
-    node("Skript schreiben (Claude)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.anthropic.com/v1/messages", **HDR_RENDER,
-        "sendHeaders": True, "headerParameters": {"parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]},
+    node("Skript schreiben (OpenAI)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.openai.com/v1/chat/completions", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 8000, system: " + json.dumps(SCRIPT_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
-        "options": {"timeout": 300000}}, [880, 280], credentials=CRED_CLAUDE),
-    node("Tashkeel (Claude)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.anthropic.com/v1/messages", **HDR_RENDER,
-        "sendHeaders": True, "headerParameters": {"parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]},
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: " + json.dumps(SCRIPT_PROMPT, ensure_ascii=False) + " }, { role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+        "options": {"timeout": 300000}}, [880, 280], credentials=CRED_OPENAI, retryOnFail=True, maxTries=2, waitBetweenTries=10000),
+    node("Tashkeel (OpenAI)", "n8n-nodes-base.httpRequest", 4.2, {"method": "POST", "url": "https://api.openai.com/v1/chat/completions", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: " + S + ".claude_model, max_tokens: 16000, system: " + json.dumps(TASHKEEL_PROMPT, ensure_ascii=False) + ", messages: [{ role: 'user', content: $json.content.map(c => c.text || '').join('').trim() }] }) }}",
-        "options": {"timeout": 300000}}, [990, 280], credentials=CRED_CLAUDE),
-    node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const txt = j => (j.content || []).map(c => c.text || '').join('').trim();
-let orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: " + json.dumps(TASHKEEL_PROMPT, ensure_ascii=False) + " }, { role: 'user', content: $json.choices[0].message.content.trim() }] }) }}",
+        "options": {"timeout": 300000}}, [990, 280], credentials=CRED_OPENAI, retryOnFail=True, maxTries=2, waitBetweenTries=10000),
+    node("Skript in Abschnitte", "n8n-nodes-base.code", 2, {"jsCode": r"""const txt = j => ((j.choices && j.choices[0] && j.choices[0].message.content) || (j.content || []).map(c => c.text || '').join('')).trim();
+let orig = ''; try { orig = txt($('Skript schreiben (OpenAI)').first().json); } catch (e) {}
 const voc = txt($input.first().json);
 // Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben
 const norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');
@@ -160,10 +159,10 @@ def link(a, b, out=0):
 link("Alle 2 Stunden", "Einstellungen")
 link("Einstellungen", "Nächstes Thema")
 link("Nächstes Thema", "Thema vorhanden?")
-link("Thema vorhanden?", "Skript schreiben (Claude)", 0)
+link("Thema vorhanden?", "Skript schreiben (OpenAI)", 0)
 link("Thema vorhanden?", "Liste leer melden", 1)
-link("Skript schreiben (Claude)", "Tashkeel (Claude)")
-link("Tashkeel (Claude)", "Skript in Abschnitte")
+link("Skript schreiben (OpenAI)", "Tashkeel (OpenAI)")
+link("Tashkeel (OpenAI)", "Skript in Abschnitte")
 link("Skript in Abschnitte", "Sprechen (Gemini TTS)")
 link("Sprechen (Gemini TTS)", "Audio zusammenfügen")
 link("Audio zusammenfügen", "Video bestellen")

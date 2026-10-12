@@ -1,0 +1,91 @@
+{
+ "nodes": [
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- التشكيل: اكتب نص الحديث والآيات بالتشكيل الكامل (أضف الحركات فقط ولا تغيّر أي حرف أو كلمة). وفي باقي النص شكّل الكلمات الفصحى وكل كلمة قد تُقرأ خطأً، حتى ينطقها القارئ الآلي نطقاً صحيحاً.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- الترقيم مهم لأن النص سيُقرأ بصوت آلي: جمل قصيرة، فاصلة عند كل وقفة خفيفة، نقطة في آخر كل جملة، و«…» قبل الأفكار المهمة لوقفة أطول، وسطر فارغ بين الفقرات.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\" }, { role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+    "options": {
+     "timeout": 300000
+    }
+   },
+   "id": "d0a5b2fd-31a0-4685-9795-6c3e1a878915",
+   "name": "Skript schreiben (OpenAI)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    880,
+    280
+   ],
+   "retryOnFail": true,
+   "maxTries": 2,
+   "waitBetweenTries": 10000
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.openai.com/v1/chat/completions",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: \"أنت مُشكِّل نصوص عربية دقيق. ستتلقى نصاً بالدارجة المغربية مع اقتباسات بالفصحى (حديث نبوي وربما آية).\\nأعد النص نفسه حرفاً بحرف، وأضف التشكيل الكامل على كل كلمة: الفتحة والضمة والكسرة والسكون والشدة والتنوين.\\n- الفصحى (الحديث والآيات): تشكيل صحيح وفق قواعد العربية.\\n- الدارجة المغربية: شكّلها كما تُنطق في المغرب (مثلاً: كَيْدِيرْ، دْيَالْ، بْزَّافْ، هَادْ الشِّي).\\n- ممنوع منعاً باتاً تغيير أو حذف أو إضافة أي حرف أو كلمة أو علامة ترقيم أو سطر.\\n- لا تكتب أي شرح أو مقدمة، أعد النص المشكول فقط.\" }, { role: 'user', content: $json.choices[0].message.content.trim() }] }) }}",
+    "options": {
+     "timeout": 300000
+    }
+   },
+   "id": "a7e88cff-fd36-4543-8159-7024465bd431",
+   "name": "Tashkeel (OpenAI)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    990,
+    280
+   ],
+   "retryOnFail": true,
+   "maxTries": 2,
+   "waitBetweenTries": 10000
+  },
+  {
+   "parameters": {
+    "jsCode": "const txt = j => ((j.choices && j.choices[0] && j.choices[0].message.content) || (j.content || []).map(c => c.text || '').join('')).trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (OpenAI)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS (Gemini): Abschnitte von max. ~3000 Zeichen (an Absatzgrenzen) (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 3000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
+   },
+   "id": "10bde0ef-a43f-4574-8495-a0063d53317b",
+   "name": "Skript in Abschnitte",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1150,
+    280
+   ]
+  }
+ ],
+ "connections": {
+  "Skript schreiben (OpenAI)": {
+   "main": [
+    [
+     {
+      "node": "Tashkeel (OpenAI)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tashkeel (OpenAI)": {
+   "main": [
+    [
+     {
+      "node": "Skript in Abschnitte",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

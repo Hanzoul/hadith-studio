@@ -12,7 +12,7 @@
      ]
     }
    },
-   "id": "65b9a359-ebf9-4b0d-9c8d-bd3aeb6938ea",
+   "id": "22318836-91c0-40b4-87c5-a0afebcb7b46",
    "name": "Alle 2 Stunden",
    "type": "n8n-nodes-base.scheduleTrigger",
    "typeVersion": 1.2,
@@ -71,7 +71,7 @@
     },
     "options": {}
    },
-   "id": "d6f78d5f-23db-4117-bf43-ef2d26b060de",
+   "id": "7b2167dd-fda2-4bda-bf72-97fe524d5977",
    "name": "Einstellungen",
    "type": "n8n-nodes-base.set",
    "typeVersion": 3.4,
@@ -87,7 +87,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "94446827-853d-4633-aa51-3e703a3b2867",
+   "id": "70ed1bde-abb4-4d06-af05-f11ebed75222",
    "name": "Nächstes Thema",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -127,7 +127,7 @@
     },
     "options": {}
    },
-   "id": "20aa6342-c228-4c55-91f1-2aeb50a1aac4",
+   "id": "ff667251-7033-49aa-a90b-350faa9e2bec",
    "name": "Thema vorhanden?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -142,7 +142,7 @@
     "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).",
     "additionalFields": {}
    },
-   "id": "9b0dd08c-5086-433a-831e-8b16d9d98fbd",
+   "id": "f02645d3-a407-4879-9bca-371d2edf1a62",
    "name": "Liste leer melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -160,27 +160,18 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "https://api.anthropic.com/v1/messages",
+    "url": "https://api.openai.com/v1/chat/completions",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "anthropic-version",
-       "value": "2023-06-01"
-      }
-     ]
-    },
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').first().json.claude_model, max_tokens: 8000, system: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- التشكيل: اكتب نص الحديث والآيات بالتشكيل الكامل (أضف الحركات فقط ولا تغيّر أي حرف أو كلمة). وفي باقي النص شكّل الكلمات الفصحى وكل كلمة قد تُقرأ خطأً، حتى ينطقها القارئ الآلي نطقاً صحيحاً.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- الترقيم مهم لأن النص سيُقرأ بصوت آلي: جمل قصيرة، فاصلة عند كل وقفة خفيفة، نقطة في آخر كل جملة، و«…» قبل الأفكار المهمة لوقفة أطول، وسطر فارغ بين الفقرات.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+    "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- التشكيل: اكتب نص الحديث والآيات بالتشكيل الكامل (أضف الحركات فقط ولا تغيّر أي حرف أو كلمة). وفي باقي النص شكّل الكلمات الفصحى وكل كلمة قد تُقرأ خطأً، حتى ينطقها القارئ الآلي نطقاً صحيحاً.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- الترقيم مهم لأن النص سيُقرأ بصوت آلي: جمل قصيرة، فاصلة عند كل وقفة خفيفة، نقطة في آخر كل جملة، و«…» قبل الأفكار المهمة لوقفة أطول، وسطر فارغ بين الفقرات.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\" }, { role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
     "options": {
      "timeout": 300000
     }
    },
-   "id": "61184014-163d-4486-a268-4424d3748628",
-   "name": "Skript schreiben (Claude)",
+   "id": "d0a5b2fd-31a0-4685-9795-6c3e1a878915",
+   "name": "Skript schreiben (OpenAI)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
@@ -190,34 +181,28 @@
    "credentials": {
     "httpHeaderAuth": {
      "id": "",
-     "name": "Anthropic (x-api-key)"
+     "name": "OpenAI (Authorization: Bearer …)"
     }
-   }
+   },
+   "retryOnFail": true,
+   "maxTries": 2,
+   "waitBetweenTries": 10000
   },
   {
    "parameters": {
     "method": "POST",
-    "url": "https://api.anthropic.com/v1/messages",
+    "url": "https://api.openai.com/v1/chat/completions",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
-    "sendHeaders": true,
-    "headerParameters": {
-     "parameters": [
-      {
-       "name": "anthropic-version",
-       "value": "2023-06-01"
-      }
-     ]
-    },
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').first().json.claude_model, max_tokens: 16000, system: \"أنت مُشكِّل نصوص عربية دقيق. ستتلقى نصاً بالدارجة المغربية مع اقتباسات بالفصحى (حديث نبوي وربما آية).\\nأعد النص نفسه حرفاً بحرف، وأضف التشكيل الكامل على كل كلمة: الفتحة والضمة والكسرة والسكون والشدة والتنوين.\\n- الفصحى (الحديث والآيات): تشكيل صحيح وفق قواعد العربية.\\n- الدارجة المغربية: شكّلها كما تُنطق في المغرب (مثلاً: كَيْدِيرْ، دْيَالْ، بْزَّافْ، هَادْ الشِّي).\\n- ممنوع منعاً باتاً تغيير أو حذف أو إضافة أي حرف أو كلمة أو علامة ترقيم أو سطر.\\n- لا تكتب أي شرح أو مقدمة، أعد النص المشكول فقط.\", messages: [{ role: 'user', content: $json.content.map(c => c.text || '').join('').trim() }] }) }}",
+    "jsonBody": "={{ JSON.stringify({ model: 'gpt-5', messages: [{ role: 'system', content: \"أنت مُشكِّل نصوص عربية دقيق. ستتلقى نصاً بالدارجة المغربية مع اقتباسات بالفصحى (حديث نبوي وربما آية).\\nأعد النص نفسه حرفاً بحرف، وأضف التشكيل الكامل على كل كلمة: الفتحة والضمة والكسرة والسكون والشدة والتنوين.\\n- الفصحى (الحديث والآيات): تشكيل صحيح وفق قواعد العربية.\\n- الدارجة المغربية: شكّلها كما تُنطق في المغرب (مثلاً: كَيْدِيرْ، دْيَالْ، بْزَّافْ، هَادْ الشِّي).\\n- ممنوع منعاً باتاً تغيير أو حذف أو إضافة أي حرف أو كلمة أو علامة ترقيم أو سطر.\\n- لا تكتب أي شرح أو مقدمة، أعد النص المشكول فقط.\" }, { role: 'user', content: $json.choices[0].message.content.trim() }] }) }}",
     "options": {
      "timeout": 300000
     }
    },
-   "id": "c44a0db2-a045-4891-a051-7beaa1499eac",
-   "name": "Tashkeel (Claude)",
+   "id": "a7e88cff-fd36-4543-8159-7024465bd431",
+   "name": "Tashkeel (OpenAI)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
    "position": [
@@ -227,15 +212,18 @@
    "credentials": {
     "httpHeaderAuth": {
      "id": "",
-     "name": "Anthropic (x-api-key)"
+     "name": "OpenAI (Authorization: Bearer …)"
     }
-   }
+   },
+   "retryOnFail": true,
+   "maxTries": 2,
+   "waitBetweenTries": 10000
   },
   {
    "parameters": {
-    "jsCode": "const txt = j => (j.content || []).map(c => c.text || '').join('').trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS (Gemini): Abschnitte von max. ~3000 Zeichen (an Absatzgrenzen) (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 3000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
+    "jsCode": "const txt = j => ((j.choices && j.choices[0] && j.choices[0].message.content) || (j.content || []).map(c => c.text || '').join('')).trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (OpenAI)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS (Gemini): Abschnitte von max. ~3000 Zeichen (an Absatzgrenzen) (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 3000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
    },
-   "id": "110576f4-03a7-4a4f-9635-3b0b64253b3f",
+   "id": "10bde0ef-a43f-4574-8495-a0063d53317b",
    "name": "Skript in Abschnitte",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -263,7 +251,7 @@
      }
     }
    },
-   "id": "5e8bb1a4-f69d-474a-b7af-cc3ef7f9e800",
+   "id": "99dcf176-91e8-4eb2-87a7-cb1351376477",
    "name": "Sprechen (Gemini TTS)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -285,7 +273,7 @@
    "parameters": {
     "jsCode": "const parts = $input.all().map(i => i.json.candidates[0].content.parts.find(p => p.inlineData).inlineData);\nconst first = $('Skript in Abschnitte').first().json;\nconst fmt = (parts[0].mimeType || '').match(/rate=(\\d+)/);\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: parts.map(p => p.data),\n  audio_format: 'pcm_s16le_' + (fmt ? fmt[1] : '24000'), language: 'ar', stories: true, vertical: true } }];"
    },
-   "id": "2a12fc90-d17f-4767-8f9e-d49e6e652d69",
+   "id": "602706bc-60e5-4fd2-a2c2-1ec33d90fcba",
    "name": "Audio zusammenfügen",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -307,7 +295,7 @@
      "timeout": 120000
     }
    },
-   "id": "038fb467-8dbc-489c-a143-677f61ed9e81",
+   "id": "7919025a-02df-482f-a017-09e65ff4fe65",
    "name": "Video bestellen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -327,7 +315,7 @@
     "amount": 5,
     "unit": "minutes"
    },
-   "id": "22cde8da-d30f-4e5e-9414-228ca50a9659",
+   "id": "f0e6f36a-0bd7-4749-9a61-ff91b8f8c93c",
    "name": "5 Minuten warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -335,7 +323,7 @@
     1980,
     280
    ],
-   "webhookId": "5ba571ae-aa69-402f-af86-ac8414b913c0"
+   "webhookId": "21a273b3-7f8d-4d64-96be-c3064c5ba2ef"
   },
   {
    "parameters": {
@@ -344,7 +332,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "76179554-9d5c-44c7-9bfc-2d797727a1e6",
+   "id": "65e41932-21c3-4be8-acaf-d82d9c847488",
    "name": "Status abfragen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -416,7 +404,7 @@
      "renameFallbackOutput": "läuft noch"
     }
    },
-   "id": "3099d307-5b52-4e57-9c88-a32f1c4e4e86",
+   "id": "9a45165e-487b-438b-be17-fde1f91e05ff",
    "name": "Fertig?",
    "type": "n8n-nodes-base.switch",
    "typeVersion": 3.2,
@@ -431,7 +419,7 @@
     "text": "=⚠️ Video-Fehler bei «{{ $json.title }}»:\n{{ $json.error }}",
     "additionalFields": {}
    },
-   "id": "31db22f7-78c0-4f24-a3b0-c1a078d9be12",
+   "id": "fb22f875-a0fe-41ea-91b9-8d9710753127",
    "name": "Fehler melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -454,7 +442,7 @@
      "disable_web_page_preview": true
     }
    },
-   "id": "bac86f88-5f37-490d-8ecf-4ce115cb5ce7",
+   "id": "a7b8d489-ba34-42d6-9745-e1224dc82374",
    "name": "Zur Freigabe senden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -478,7 +466,7 @@
     "resumeAmount": 24,
     "resumeUnit": "hours"
    },
-   "id": "99eaf78a-f3d2-4005-9fad-9e9b344c2bf9",
+   "id": "ce243828-4ae3-4ab1-bb7b-44ce37678b21",
    "name": "Auf Freigabe warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -486,7 +474,7 @@
     2860,
     120
    ],
-   "webhookId": "46d90b1d-af2f-40ad-8ba7-dd799f3d9435"
+   "webhookId": "68b65f61-0b6a-45d4-a0df-9fbc856ab099"
   },
   {
    "parameters": {
@@ -512,7 +500,7 @@
     },
     "options": {}
    },
-   "id": "d5879748-8d0b-45dd-af6a-865e72084ac6",
+   "id": "f7042991-7ed2-44d0-bad2-20bca445a73c",
    "name": "Freigegeben?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -526,7 +514,7 @@
     "url": "={{ $('Status abfragen').last().json.urls['social.json'] }}",
     "options": {}
    },
-   "id": "8201191e-418a-4efe-a3d1-02eea1c78098",
+   "id": "bedca467-57dc-4540-b20c-d60227bce918",
    "name": "Social-Texte laden",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -539,7 +527,7 @@
    "parameters": {
     "jsCode": "const st = $('Status abfragen').last().json;\nconst s = $input.first().json;\nconst cfg = $('Einstellungen').first().json;\nconst tags = (s.hashtags || []).join(' ') || cfg.hashtags;\nreturn [{ json: {\n  title: (s.youtube_titles && s.youtube_titles[0]) || st.title,\n  yt_description: s.youtube_description || st.title,\n  yt_tags: (s.tags || []).join(','),\n  caption_ig: s.instagram_caption || (st.title + '\\n\\n' + tags),\n  caption_tt: s.tiktok_caption || (st.title + ' ' + tags),\n  caption_fb: s.facebook_caption || (st.title + '\\n\\n' + tags),\n  pinned_comment: s.pinned_comment || '',\n  video_url: st.urls['video.mp4'], vertical_url: st.urls['video_vertical.mp4'] } }];"
    },
-   "id": "53939528-700e-4a0f-882f-e6cdb24cbfad",
+   "id": "1f25e908-88a7-4433-9227-ecd010636898",
    "name": "Text für Posts",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -559,7 +547,7 @@
      }
     }
    },
-   "id": "b4381aa4-ced8-46fe-b42f-8d664f0120df",
+   "id": "9bd11a3c-90bf-4e65-94f0-f9d34af8e83e",
    "name": "Video laden (YouTube)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -583,7 +571,7 @@
      "defaultLanguage": "ar"
     }
    },
-   "id": "cf6a0d4b-5443-4ee5-9be0-e00ea10cd9ff",
+   "id": "a554d7ac-f64e-4b7b-b8ec-8dfcfa4d47f9",
    "name": "YouTube hochladen",
    "type": "n8n-nodes-base.youTube",
    "typeVersion": 1,
@@ -625,7 +613,7 @@
      "timeout": 300000
     }
    },
-   "id": "e063300e-c277-49f6-be64-b6ffb93f0899",
+   "id": "f7661ef6-8aab-4fde-a55d-f3243e102917",
    "name": "Facebook-Seite posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -669,7 +657,7 @@
     },
     "options": {}
    },
-   "id": "f71ee6cf-6ff8-486c-bb55-1e3db8fdeb6f",
+   "id": "4d282f90-53e5-45b6-8ebe-c7d1928d5d35",
    "name": "Instagram Reel anlegen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -689,7 +677,7 @@
     "amount": 3,
     "unit": "minutes"
    },
-   "id": "83ea3001-8cb4-4171-a170-0b49497cb225",
+   "id": "9593d659-d0a0-4426-bffd-0e05fb48b837",
    "name": "IG: 3 Min. verarbeiten lassen",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -697,7 +685,7 @@
     3740,
     160
    ],
-   "webhookId": "47fb78ea-840d-42c1-b191-3ba352ed2818"
+   "webhookId": "7da98a7f-8c97-4f23-96c9-7adfda081643"
   },
   {
    "parameters": {
@@ -716,7 +704,7 @@
     },
     "options": {}
    },
-   "id": "870befec-0422-4add-94b1-45244adb462c",
+   "id": "1ba85cb7-a57c-44a0-bcf8-5f30e27eda6c",
    "name": "Instagram veröffentlichen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -742,7 +730,7 @@
     "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.caption_tt.slice(0, 2000), privacy_level: 'SELF_ONLY', disable_comment: false }, source_info: { source: 'PULL_FROM_URL', video_url: $json.vertical_url } }) }}",
     "options": {}
    },
-   "id": "18e03e6b-9386-462b-ad12-a8495dd21f62",
+   "id": "42a69bed-437d-4308-bfc8-74ae69b40890",
    "name": "TikTok posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -765,7 +753,7 @@
     "text": "=🗑️ Verworfen: {{ $('Status abfragen').last().json.title }}. Das Thema kann über /topics/{{ $('Nächstes Thema').first().json.id }}/reset wieder freigegeben werden.",
     "additionalFields": {}
    },
-   "id": "cd949a40-1cca-44b9-9262-2cc0d51f08ff",
+   "id": "2ff22113-4a89-41d8-b66a-691a2e2cf534",
    "name": "Verworfen melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -819,7 +807,7 @@
    "main": [
     [
      {
-      "node": "Skript schreiben (Claude)",
+      "node": "Skript schreiben (OpenAI)",
       "type": "main",
       "index": 0
      }
@@ -833,18 +821,18 @@
     ]
    ]
   },
-  "Skript schreiben (Claude)": {
+  "Skript schreiben (OpenAI)": {
    "main": [
     [
      {
-      "node": "Tashkeel (Claude)",
+      "node": "Tashkeel (OpenAI)",
       "type": "main",
       "index": 0
      }
     ]
    ]
   },
-  "Tashkeel (Claude)": {
+  "Tashkeel (OpenAI)": {
    "main": [
     [
      {

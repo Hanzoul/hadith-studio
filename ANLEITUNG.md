@@ -2,14 +2,14 @@
 
 **Ablauf alle 2 Stunden:**
 1. n8n holt den nächsten Hadith aus deiner PDF-Liste.
-2. Claude schreibt ein 4–5-Minuten-Skript auf Darija.
+2. OpenAI schreibt ein 4–5-Minuten-Skript auf Darija und setzt danach die Harakat.
 3. Gemini TTS (Stimme Enzo) spricht das Skript.
 4. Der Renderer zeichnet daraus das Whiteboard-Video: 16:9, 9:16 und Stories.
 5. Du bekommst das Video per **Telegram zur Prüfung**.
 6. Nach deinem ✅ wird es auf YouTube, Facebook, Instagram und TikTok gepostet.
 
 ```
-Zeitplan → Thema → Skript (Claude) → Audio (Gemini) → Renderer → Telegram-Freigabe → YouTube · Facebook · Instagram · TikTok
+Zeitplan → Thema → Skript (OpenAI) → Audio (Gemini) → Renderer → Telegram-Freigabe → YouTube · Facebook · Instagram · TikTok
 ```
 
 ---
@@ -75,7 +75,7 @@ Die PDF muss **echten Text** enthalten. Gescannte Bilder gehen nicht.
 | Name im Workflow | Typ in n8n | Inhalt |
 |---|---|---|
 | Hadith Renderer (X-API-Key) | Header Auth | Name `X-API-Key`, Wert = dein `RENDER_TOKEN` |
-| Anthropic (x-api-key) | Header Auth | Name `x-api-key`, Wert = Claude-API-Schlüssel |
+| OpenAI (Authorization: Bearer …) | Header Auth | Name `Authorization`, Wert `Bearer sk-…` (Schlüssel von platform.openai.com) |
 | Gemini (x-goog-api-key) | Header Auth | Name `x-goog-api-key`, Wert = Schlüssel aus Google AI Studio (Billing aktivieren!) |
 | Telegram Bot | Telegram API | Bot-Token von @BotFather |
 | YouTube account | YouTube OAuth2 | Google-Cloud-Projekt mit YouTube Data API v3 |
