@@ -13,6 +13,7 @@ CLAUDE_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5-5")
 WORKERS = int(os.environ.get("RENDER_WORKERS", "2"))
 FPS = int(os.environ.get("FPS", "25"))
+PRESET = os.environ.get("FFMPEG_PRESET", "veryfast")
 CRF = os.environ.get("VIDEO_CRF", "28")
 
 
@@ -198,10 +199,10 @@ async def render_range(job, out, t0, t1, prog):
         if errs:
             raise RuntimeError("page error: " + errs[0][:400])
         ff = subprocess.Popen(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "image2pipe", "-framerate", str(FPS), "-c:v", "mjpeg", "-i", "-",
-                               "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
+                               "-c:v", "libx264", "-preset", PRESET, "-crf", CRF, "-tune", "animation", "-pix_fmt", "yuv420p", str(out)], stdin=subprocess.PIPE)
         n0, n1 = int(t0 * FPS), int(t1 * FPS)
         for i in range(n0, n1):
-            d = await pg.evaluate(f'(()=>{{renderAt({i / FPS});return document.getElementById("cv").toDataURL("image/jpeg",.92)}})()')
+            d = await pg.evaluate(f'(()=>{{renderAt({i / FPS});return document.getElementById("cv").toDataURL("image/jpeg",.88)}})()')
             ff.stdin.write(base64.b64decode(d[23:]))
             prog[out.name] = (i - n0 + 1) / max(1, n1 - n0)
         ff.stdin.close()
@@ -229,7 +230,7 @@ def render_video(job, duration):
     asyncio.run(run())
     (d / "chunks.txt").write_text("\n".join(f"file '{o.name}'" for o in outs))
     sh("ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(d / "chunks.txt"), "-i", str(d / "audio.wav"),
-       "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "medium", "-crf", CRF, "-tune", "animation", "-pix_fmt", "yuv420p",
+       "-map", "0:v", "-map", "1:a", "-c:v", "copy",
        "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", str(d / "video.mp4"))
     for o in outs:
         o.unlink(missing_ok=True)
@@ -302,7 +303,7 @@ def make_stories(job, scenes, duration, series):
         sh("ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-loop", "1", "-framerate", str(FPS), "-i", str(d / f"bg_{k:02d}.png"),
            "-ss", str(a), "-t", str(dur), "-i", str(job.dir / "video.mp4"), "-ss", str(a), "-t", str(dur), "-i", str(job.dir / "audio.wav"),
            "-filter_complex", f"[1:v]scale=1080:608,fade=t=in:st=0:d=0.5:color=0xf3ead6,fade=t=out:st={fo}:d=0.45:color=0xf3ead6[v];[0:v][v]overlay=0:640:shortest=1,format=yuv420p[o];[2:a]afade=t=in:d=0.15,afade=t=out:st={fo}:d=0.45[a]",
-           "-map", "[o]", "-map", "[a]", "-t", str(dur), "-c:v", "libx264", "-preset", "medium", "-crf", "24", "-tune", "animation", "-r", str(FPS),
+           "-map", "[o]", "-map", "[a]", "-t", str(dur), "-c:v", "libx264", "-preset", PRESET, "-crf", "24", "-tune", "animation", "-r", str(FPS),
            "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", str(d / f"story_{k:02d}.mp4"))
         (d / f"bg_{k:02d}.png").unlink(missing_ok=True)
     (d / "_bg.html").unlink(missing_ok=True)
@@ -323,7 +324,7 @@ def make_vertical(job, title, series, duration):
         pg.screenshot(path=str(d / "_v.png")); b.close()
     sh("ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-loop", "1", "-framerate", str(FPS), "-i", str(d / "_v.png"), "-i", str(d / "video.mp4"),
        "-filter_complex", "[1:v]scale=1080:608[v];[0:v][v]overlay=0:640:shortest=1,format=yuv420p[o]", "-map", "[o]", "-map", "1:a",
-       "-c:v", "libx264", "-preset", "medium", "-crf", CRF, "-tune", "animation", "-r", str(FPS), "-c:a", "copy", "-movflags", "+faststart", str(d / "video_vertical.mp4"))
+       "-c:v", "libx264", "-preset", PRESET, "-crf", CRF, "-tune", "animation", "-r", str(FPS), "-c:a", "copy", "-movflags", "+faststart", str(d / "video_vertical.mp4"))
     (d / "_v.png").unlink(missing_ok=True); (d / "_v.html").unlink(missing_ok=True)
 
 

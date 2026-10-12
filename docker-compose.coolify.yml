@@ -10,6 +10,8 @@ services:
       - PUBLIC_URL=${PUBLIC_URL}
       - RENDER_WORKERS=${RENDER_WORKERS:-2}
       - VIDEO_CRF=28
+      - FPS=${FPS:-25}
+      - FFMPEG_PRESET=${FFMPEG_PRESET:-veryfast}
       - KEEP_DAYS=7
     expose:
       - "8080"
