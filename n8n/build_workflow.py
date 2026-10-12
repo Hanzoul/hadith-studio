@@ -92,8 +92,8 @@ return chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic
         "url": "https://api.elevenlabs.io/v1/text-to-speech/DEINE_VOICE_ID?output_format=mp3_44100_128", **HDR_RENDER,
         "sendBody": True, "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ text: $json.chunk, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }) }}",
-        "options": {"timeout": 300000, "batching": {"batch": {"batchSize": 1, "batchInterval": 1000}},
-                    "response": {"response": {"responseFormat": "file", "outputPropertyName": "data"}}}}, [1320, 280], credentials=CRED_ELEVEN),
+        "options": {"timeout": 300000, "batching": {"batch": {"batchSize": 1, "batchInterval": 15000}},
+                    "response": {"response": {"responseFormat": "file", "outputPropertyName": "data"}}}}, [1320, 280], credentials=CRED_ELEVEN, retryOnFail=True, maxTries=3, waitBetweenTries=10000),
     node("Audio zusammenfügen", "n8n-nodes-base.code", 2, {"jsCode": r"""const items = $input.all();
 const audio = [];
 for (let i = 0; i < items.length; i++) {
