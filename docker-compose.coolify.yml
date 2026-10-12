@@ -1,8 +1,8 @@
-# Für Coolify → "Docker Compose Empty": diesen Inhalt einfügen
+# Für Coolify: + New → Public Repository → Build Pack "Docker Compose" → Docker Compose Location: /docker-compose.coolify.yml
 services:
   hadith-renderer:
     build:
-      context: https://github.com/Hanzoul/hadith-studio.git#main:renderer
+      context: ./renderer
     environment:
       - RENDER_TOKEN=${RENDER_TOKEN}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
