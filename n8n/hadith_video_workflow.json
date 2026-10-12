@@ -12,7 +12,7 @@
      ]
     }
    },
-   "id": "0bdde5d1-6646-4dd7-a080-4941bfd1e560",
+   "id": "05935350-95b1-4d8f-b5ff-9bf3722613f2",
    "name": "Alle 2 Stunden",
    "type": "n8n-nodes-base.scheduleTrigger",
    "typeVersion": 1.2,
@@ -71,7 +71,7 @@
     },
     "options": {}
    },
-   "id": "2c8d906b-810b-4c29-963f-a82665e92465",
+   "id": "811ce725-9c94-41bd-9870-f3027eab6c16",
    "name": "Einstellungen",
    "type": "n8n-nodes-base.set",
    "typeVersion": 3.4,
@@ -87,7 +87,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "c322e8df-ba39-45e4-9dc3-fa882b5e428c",
+   "id": "547fabd7-7549-443c-9696-c29cffd9ed60",
    "name": "Nächstes Thema",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -127,7 +127,7 @@
     },
     "options": {}
    },
-   "id": "93bc9e59-db39-4ba6-90aa-e354cc0cdeb8",
+   "id": "46eef9d2-ea1e-4582-ad4c-a98127a6db64",
    "name": "Thema vorhanden?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -142,7 +142,7 @@
     "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).",
     "additionalFields": {}
    },
-   "id": "1a318f90-e242-4a1e-b221-680ff4dcd296",
+   "id": "704f9924-33c2-4f83-9333-02e8f52e1c95",
    "name": "Liste leer melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -179,7 +179,7 @@
      "timeout": 300000
     }
    },
-   "id": "12019d72-17fb-43f6-b98a-317cdd908129",
+   "id": "54df94d4-ead1-4d83-bb90-0223c12283fa",
    "name": "Skript schreiben (Claude)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -216,7 +216,7 @@
      "timeout": 300000
     }
    },
-   "id": "c8a33071-ea28-422e-931b-449e2fc7e802",
+   "id": "9b93b720-5750-451b-a743-8e0e77959db4",
    "name": "Tashkeel (Claude)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -233,9 +233,9 @@
   },
   {
    "parameters": {
-    "jsCode": "const txt = j => (j.content || []).map(c => c.text || '').join('').trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
+    "jsCode": "const txt = j => (j.content || []).map(c => c.text || '').join('').trim();\nlet orig = ''; try { orig = txt($('Skript schreiben (Claude)').first().json); } catch (e) {}\nconst voc = txt($input.first().json);\n// Kontrolle: Buchstaben (ohne Harakat) müssen gleich bleiben\nconst norm = s => s.replace(/[ً-ٰٟـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/[^ء-ي]/g, '');\nfunction sim(a, b) {\n  if (a === b) return 1;\n  const n = a.length, m = b.length; if (!n || !m) return 0;\n  let prev = Array.from({ length: m + 1 }, (_, j) => j);\n  for (let i = 1; i <= n; i++) { const cur = [i];\n    for (let j = 1; j <= m; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));\n    prev = cur; }\n  return 1 - prev[m] / Math.max(n, m);\n}\nconst score = orig ? sim(norm(orig), norm(voc)) : 1;\nconst ok = voc && score >= 0.985;\nconst t = ok ? voc : (orig || voc);\nconst topic = $('Nächstes Thema').first().json;\n// TTS: ElevenLabs schafft ~10.000 Zeichen, also meist 1 Abschnitt; max. ~9000 Zeichen (an Absatzgrenzen)\nconst paras = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);\nconst chunks = []; let cur = '';\nfor (const p of paras) { if ((cur + '\\n\\n' + p).length > 9000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\\n\\n' + p : p; }\nif (cur) chunks.push(cur);\nreturn chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,\n  tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"
    },
-   "id": "e7e3f9e7-9f29-4edf-b312-a2d9933848ae",
+   "id": "6b9a7601-cda8-4d78-9a3a-b68ff0983e8e",
    "name": "Skript in Abschnitte",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -269,7 +269,7 @@
      }
     }
    },
-   "id": "1a4a8ea4-16e5-4618-ba84-c86a5b554554",
+   "id": "e960f247-23a0-46fd-a872-a65d77875a7d",
    "name": "Sprechen (ElevenLabs)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -291,7 +291,7 @@
    "parameters": {
     "jsCode": "const items = $input.all();\nconst audio = [];\nfor (let i = 0; i < items.length; i++) {\n  const buf = await this.helpers.getBinaryDataBuffer(i, 'data');\n  audio.push(buf.toString('base64'));\n}\nconst first = $('Skript in Abschnitte').first().json;\nreturn [{ json: { title: first.title, script: first.script, topic_id: first.topic_id, source: first.source,\n  series: $('Einstellungen').first().json.series, audio_b64: audio,\n  audio_format: 'mp3', language: 'ar', stories: true, vertical: true } }];"
    },
-   "id": "c57849ed-dec7-4ddc-a4da-f9e251fa28e5",
+   "id": "5063c140-2355-4b2b-97c1-9713b8eabf78",
    "name": "Audio zusammenfügen",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -313,7 +313,7 @@
      "timeout": 120000
     }
    },
-   "id": "8b1f97a8-5f39-4646-a292-c4699ee3aee2",
+   "id": "2e611ef7-5074-42a0-9c6f-a7d5c5cbd8e9",
    "name": "Video bestellen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -333,7 +333,7 @@
     "amount": 5,
     "unit": "minutes"
    },
-   "id": "4729b01c-de63-4d25-821e-ab4a7066e0ed",
+   "id": "8cfd84b6-4e8e-4802-a707-709f4aaa0338",
    "name": "5 Minuten warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -341,7 +341,7 @@
     1980,
     280
    ],
-   "webhookId": "eac7a82d-6fb5-4e82-913c-3679ad53e3fa"
+   "webhookId": "2019fdc3-e090-4655-8521-48152f5adfe0"
   },
   {
    "parameters": {
@@ -350,7 +350,7 @@
     "genericAuthType": "httpHeaderAuth",
     "options": {}
    },
-   "id": "767f0732-b7e4-4a59-b618-67e3e036958d",
+   "id": "1a8c8b6d-0645-45ee-bbfc-174fc3952c41",
    "name": "Status abfragen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -422,7 +422,7 @@
      "renameFallbackOutput": "läuft noch"
     }
    },
-   "id": "d784e708-7e91-4a54-9eb7-1dfe0a39f6d1",
+   "id": "dfb8bb7e-aa03-4f98-80e2-84a2d671b12a",
    "name": "Fertig?",
    "type": "n8n-nodes-base.switch",
    "typeVersion": 3.2,
@@ -437,7 +437,7 @@
     "text": "=⚠️ Video-Fehler bei «{{ $json.title }}»:\n{{ $json.error }}",
     "additionalFields": {}
    },
-   "id": "900fcb60-c6ba-443d-8506-06bfded491d9",
+   "id": "afa10fa5-3afb-4f6d-952a-68f5ce9ff5fa",
    "name": "Fehler melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -460,7 +460,7 @@
      "disable_web_page_preview": true
     }
    },
-   "id": "87423d7e-59ea-416b-bc33-3a10ec70d2f1",
+   "id": "cd4b1473-db4e-4565-bf1f-6f08b5bdf433",
    "name": "Zur Freigabe senden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,
@@ -484,7 +484,7 @@
     "resumeAmount": 24,
     "resumeUnit": "hours"
    },
-   "id": "61802915-ad86-47d1-81f2-7b338a1c3c93",
+   "id": "66e9321d-e98f-4c3b-bbce-dbe87be9094d",
    "name": "Auf Freigabe warten",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -492,7 +492,7 @@
     2860,
     120
    ],
-   "webhookId": "7d9f3647-53c9-4d31-a961-d07babc57173"
+   "webhookId": "21232827-644b-4037-9b14-4d86903a10c5"
   },
   {
    "parameters": {
@@ -518,7 +518,7 @@
     },
     "options": {}
    },
-   "id": "9315dbd6-f646-431a-8308-6741f547b565",
+   "id": "bded710c-f071-47f1-997a-ed3467b31d25",
    "name": "Freigegeben?",
    "type": "n8n-nodes-base.if",
    "typeVersion": 2.2,
@@ -532,7 +532,7 @@
     "url": "={{ $('Status abfragen').last().json.urls['social.json'] }}",
     "options": {}
    },
-   "id": "ad9f1d6a-311d-484c-bcab-6e55c12b3d86",
+   "id": "0962270d-405d-4f6f-a75c-cc8d3e487eff",
    "name": "Social-Texte laden",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -545,7 +545,7 @@
    "parameters": {
     "jsCode": "const st = $('Status abfragen').last().json;\nconst s = $input.first().json;\nconst cfg = $('Einstellungen').first().json;\nconst tags = (s.hashtags || []).join(' ') || cfg.hashtags;\nreturn [{ json: {\n  title: (s.youtube_titles && s.youtube_titles[0]) || st.title,\n  yt_description: s.youtube_description || st.title,\n  yt_tags: (s.tags || []).join(','),\n  caption_ig: s.instagram_caption || (st.title + '\\n\\n' + tags),\n  caption_tt: s.tiktok_caption || (st.title + ' ' + tags),\n  caption_fb: s.facebook_caption || (st.title + '\\n\\n' + tags),\n  pinned_comment: s.pinned_comment || '',\n  video_url: st.urls['video.mp4'], vertical_url: st.urls['video_vertical.mp4'] } }];"
    },
-   "id": "11cde33d-4647-4200-9114-35dbc2864fda",
+   "id": "d7aa4486-981b-4391-b33d-917deafa7948",
    "name": "Text für Posts",
    "type": "n8n-nodes-base.code",
    "typeVersion": 2,
@@ -565,7 +565,7 @@
      }
     }
    },
-   "id": "16f47235-942a-4301-8667-6bd8b1e5426d",
+   "id": "454f1d06-861c-45dd-bc80-e58ed156850d",
    "name": "Video laden (YouTube)",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -589,7 +589,7 @@
      "defaultLanguage": "ar"
     }
    },
-   "id": "21c49474-e19c-490e-a337-f207e73598f2",
+   "id": "093806fa-ecef-4ead-a87e-0b848af43299",
    "name": "YouTube hochladen",
    "type": "n8n-nodes-base.youTube",
    "typeVersion": 1,
@@ -631,7 +631,7 @@
      "timeout": 300000
     }
    },
-   "id": "2b6e4a8f-8265-4a7d-a0b8-c38f01c0d7e3",
+   "id": "597f7bb3-0216-4ce3-9399-09c4eb7f5779",
    "name": "Facebook-Seite posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -675,7 +675,7 @@
     },
     "options": {}
    },
-   "id": "c4ac7d04-6e93-4553-8eb5-3b85323eba7f",
+   "id": "824e69b1-dcd8-4bc4-9ea6-122bae8e7330",
    "name": "Instagram Reel anlegen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -695,7 +695,7 @@
     "amount": 3,
     "unit": "minutes"
    },
-   "id": "9de37726-b1a4-4ff0-910e-56c39f8cf06d",
+   "id": "22f7e7c6-fa38-4195-ab0f-f1d7d564ad36",
    "name": "IG: 3 Min. verarbeiten lassen",
    "type": "n8n-nodes-base.wait",
    "typeVersion": 1.1,
@@ -703,7 +703,7 @@
     3740,
     160
    ],
-   "webhookId": "fe40bf77-717f-478c-bc50-d38713f8dc34"
+   "webhookId": "601065a9-331b-4365-b379-a77b8efb8db2"
   },
   {
    "parameters": {
@@ -722,7 +722,7 @@
     },
     "options": {}
    },
-   "id": "d80bda7b-b74e-4b73-8387-025af53e566c",
+   "id": "2aa3d60a-160f-42f9-93fd-e72ce299fda8",
    "name": "Instagram veröffentlichen",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -748,7 +748,7 @@
     "jsonBody": "={{ JSON.stringify({ post_info: { title: $json.caption_tt.slice(0, 2000), privacy_level: 'SELF_ONLY', disable_comment: false }, source_info: { source: 'PULL_FROM_URL', video_url: $json.vertical_url } }) }}",
     "options": {}
    },
-   "id": "ed157b5c-8ac2-4413-9037-16270650024b",
+   "id": "d0db41a5-7884-4c64-9388-24e05c816e6f",
    "name": "TikTok posten",
    "type": "n8n-nodes-base.httpRequest",
    "typeVersion": 4.2,
@@ -771,7 +771,7 @@
     "text": "=🗑️ Verworfen: {{ $('Status abfragen').last().json.title }}. Das Thema kann über /topics/{{ $('Nächstes Thema').first().json.id }}/reset wieder freigegeben werden.",
     "additionalFields": {}
    },
-   "id": "acc3cfdf-6e0f-43ec-938e-884328ce41b5",
+   "id": "6b2b1825-11ef-4da4-96d6-d86faf4716cb",
    "name": "Verworfen melden",
    "type": "n8n-nodes-base.telegram",
    "typeVersion": 1.2,

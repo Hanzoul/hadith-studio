@@ -81,10 +81,10 @@ const score = orig ? sim(norm(orig), norm(voc)) : 1;
 const ok = voc && score >= 0.985;
 const t = ok ? voc : (orig || voc);
 const topic = $('Nächstes Thema').first().json;
-// TTS in Abschnitten von max. ~1200 Zeichen (an Absatzgrenzen)
+// TTS: ElevenLabs schafft ~10.000 Zeichen, also meist 1 Abschnitt; max. ~9000 Zeichen (an Absatzgrenzen)
 const paras = t.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
 const chunks = []; let cur = '';
-for (const p of paras) { if ((cur + '\n\n' + p).length > 1200 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\n\n' + p : p; }
+for (const p of paras) { if ((cur + '\n\n' + p).length > 9000 && cur) { chunks.push(cur); cur = p; } else cur = cur ? cur + '\n\n' + p : p; }
 if (cur) chunks.push(cur);
 return chunks.map((c, i) => ({ json: { idx: i, chunk: c, script: t, title: topic.title, topic_id: topic.id, source: topic.source,
   tashkeel: ok ? 'ok' : 'FEHLER – Text ohne Harakat (Abweichung ' + Math.round((1 - score) * 1000) / 10 + ' %)' } }));"""}, [1150, 280]),
