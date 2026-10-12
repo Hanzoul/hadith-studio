@@ -28,7 +28,7 @@ CRED_TT = {"httpHeaderAuth": {"id": "", "name": "TikTok (Authorization: Bearer â
 CRED_TG = {"telegramApi": {"id": "", "name": "Telegram Bot"}}
 CRED_YT = {"youTubeOAuth2Api": {"id": "", "name": "YouTube account"}}
 
-S = "$('Einstellungen').item.json"
+S = "$('Einstellungen').first().json"
 
 nodes = [
     node("Alle 2 Stunden", "n8n-nodes-base.scheduleTrigger", 1.2, {"rule": {"interval": [{"field": "hours", "hoursInterval": 2}]}}, [0, 300]),

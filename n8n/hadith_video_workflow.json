@@ -150,7 +150,7 @@
   },
   {
    "parameters": {
-    "chatId": "={{ $('Einstellungen').item.json.telegram_chat_id }}",
+    "chatId": "={{ $('Einstellungen').first().json.telegram_chat_id }}",
     "text": "📭 Hadith Studio: Die Themenliste ist leer. Bitte eine neue PDF hochladen (…/topics/ui).",
     "additionalFields": {}
    },
@@ -186,7 +186,7 @@
     },
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').item.json.claude_model, max_tokens: 4000, system: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
+    "jsonBody": "={{ JSON.stringify({ model: $('Einstellungen').first().json.claude_model, max_tokens: 4000, system: \"أنت كاتب محتوى دعوي مغربي. اكتب نص تعليق صوتي بالدارجة المغربية الواضحة (مع بعض الفصحى عند الاقتباس) لفيديو توعوي مدته حوالي 4 إلى 5 دقائق (بين 550 و700 كلمة).\\nالقواعد:\\n- ابدأ بمدخل قصير يشد الانتباه، ثم اذكر نص الحديث كما هو مكتوب في المعطيات حرفياً، ثم مصدره كما هو مكتوب (لا تغيّر ولا تضف درجة أو مصدراً غير موجود).\\n- اشرح المعنى بأمثلة من الحياة اليومية، وقصص قصيرة واقعية، وأسئلة يطرحها المشاهد على نفسه.\\n- لا تنسب للنبي ﷺ ولا للصحابة أي كلام غير الحديث المعطى. لا تذكر أحاديث أخرى. يمكنك ذكر آية قرآنية فقط إذا كنت متأكداً تماماً من نصها، مع اسم السورة ورقم الآية.\\n- لا تصف شكل النبي ﷺ أو أي نبي أو ملَك.\\n- اختم بخلاصة عملية ودعاء قصير.\\n- اكتب فقرات قصيرة (2–4 جمل)، بدون عناوين، بدون رموز Markdown، بدون تعليمات إخراج. النص فقط كما سيُقرأ.\", messages: [{ role: 'user', content: 'العنوان: ' + $json.title + '\\nنص الحديث: ' + $json.text + '\\nالمصدر: ' + ($json.source || 'غير مذكور') + '\\nملاحظة: ' + ($json.note || '') }] }) }}",
     "options": {
      "timeout": 300000
     }
@@ -222,12 +222,12 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Einstellungen').item.json.tts_model }}:generateContent",
+    "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $('Einstellungen').first().json.tts_model }}:generateContent",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "sendBody": true,
     "specifyBody": "json",
-    "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"اقرأ هذا النص بالدارجة المغربية بصوت دافئ وهادئ كراوٍ يحكي قصة، بإيقاع طبيعي ووقفات قصيرة بين الفقرات:\\n\\n\" + $json.chunk }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: $('Einstellungen').item.json.tts_voice } } } } }) }}",
+    "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"اقرأ هذا النص بالدارجة المغربية بصوت دافئ وهادئ كراوٍ يحكي قصة، بإيقاع طبيعي ووقفات قصيرة بين الفقرات:\\n\\n\" + $json.chunk }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: $('Einstellungen').first().json.tts_voice } } } } }) }}",
     "options": {
      "timeout": 300000,
      "batching": {
@@ -269,7 +269,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "={{ $('Einstellungen').item.json.renderer_url }}/jobs",
+    "url": "={{ $('Einstellungen').first().json.renderer_url }}/jobs",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "sendBody": true,
@@ -311,7 +311,7 @@
   },
   {
    "parameters": {
-    "url": "={{ $('Einstellungen').item.json.renderer_url }}/jobs/{{ $('Video bestellen').first().json.id }}",
+    "url": "={{ $('Einstellungen').first().json.renderer_url }}/jobs/{{ $('Video bestellen').first().json.id }}",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpHeaderAuth",
     "options": {}
@@ -399,7 +399,7 @@
   },
   {
    "parameters": {
-    "chatId": "={{ $('Einstellungen').item.json.telegram_chat_id }}",
+    "chatId": "={{ $('Einstellungen').first().json.telegram_chat_id }}",
     "text": "=⚠️ Video-Fehler bei «{{ $json.title }}»:\n{{ $json.error }}",
     "additionalFields": {}
    },
@@ -420,7 +420,7 @@
   },
   {
    "parameters": {
-    "chatId": "={{ $('Einstellungen').item.json.telegram_chat_id }}",
+    "chatId": "={{ $('Einstellungen').first().json.telegram_chat_id }}",
     "text": "=🎬 Neues Video: {{ $json.title }} ({{ Math.round($json.duration/60) }} Min.)\n\nAnsehen: {{ $json.urls['video.mp4'] }}\nHochformat: {{ $json.urls['video_vertical.mp4'] }}\nTexte & Hashtags: {{ $json.urls['social.md'] }}\n\nBitte Hadith-Text, Quelle und Aussagen prüfen.\n\n✅ Freigeben und posten:\n{{ $execution.resumeUrl }}?ok=1\n\n❌ Verwerfen:\n{{ $execution.resumeUrl }}?ok=0",
     "additionalFields": {
      "disable_web_page_preview": true
@@ -573,7 +573,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').item.json.facebook_page_id }}/videos",
+    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').first().json.facebook_page_id }}/videos",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpQueryAuth",
     "sendQuery": true,
@@ -615,7 +615,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').item.json.instagram_user_id }}/media",
+    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').first().json.instagram_user_id }}/media",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpQueryAuth",
     "sendQuery": true,
@@ -674,7 +674,7 @@
   {
    "parameters": {
     "method": "POST",
-    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').item.json.instagram_user_id }}/media_publish",
+    "url": "=https://graph.facebook.com/v21.0/{{ $('Einstellungen').first().json.instagram_user_id }}/media_publish",
     "authentication": "genericCredentialType",
     "genericAuthType": "httpQueryAuth",
     "sendQuery": true,
@@ -733,7 +733,7 @@
   },
   {
    "parameters": {
-    "chatId": "={{ $('Einstellungen').item.json.telegram_chat_id }}",
+    "chatId": "={{ $('Einstellungen').first().json.telegram_chat_id }}",
     "text": "=🗑️ Verworfen: {{ $('Status abfragen').last().json.title }}. Das Thema kann über /topics/{{ $('Nächstes Thema').first().json.id }}/reset wieder freigegeben werden.",
     "additionalFields": {}
    },
