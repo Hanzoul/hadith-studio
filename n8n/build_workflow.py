@@ -33,15 +33,15 @@ S = "$('Einstellungen').item.json"
 nodes = [
     node("Alle 2 Stunden", "n8n-nodes-base.scheduleTrigger", 1.2, {"rule": {"interval": [{"field": "hours", "hoursInterval": 2}]}}, [0, 300]),
     node("Einstellungen", "n8n-nodes-base.set", 3.4, {"assignments": {"assignments": [
-        {"id": "a1", "name": "renderer_url", "value": "http://hadith-renderer:8080", "type": "string"},
-        {"id": "a2", "name": "series", "value": "أحاديث نبوية", "type": "string"},
+        {"id": "a1", "name": "renderer_url", "value": "https://hadith.lehrer-anzoul.de", "type": "string"},
+        {"id": "a2", "name": "series", "value": "حديث بالقلم", "type": "string"},
         {"id": "a3", "name": "claude_model", "value": "claude-sonnet-5-5", "type": "string"},
         {"id": "a4", "name": "tts_model", "value": "gemini-2.5-flash-preview-tts", "type": "string"},
         {"id": "a5", "name": "tts_voice", "value": "Charon", "type": "string"},
         {"id": "a6", "name": "telegram_chat_id", "value": "DEINE_CHAT_ID", "type": "string"},
         {"id": "a7", "name": "facebook_page_id", "value": "DEINE_PAGE_ID", "type": "string"},
         {"id": "a8", "name": "instagram_user_id", "value": "DEINE_IG_USER_ID", "type": "string"},
-        {"id": "a9", "name": "hashtags", "value": "#حديث #السنة_النبوية #إسلام #تذكير", "type": "string"}]}, "options": {}}, [220, 300]),
+        {"id": "a9", "name": "hashtags", "value": "#حديث_بالقلم #أحاديث_نبوية #السنة_النبوية #بالدارجة #تذكير", "type": "string"}]}, "options": {}}, [220, 300]),
     node("Nächstes Thema", "n8n-nodes-base.httpRequest", 4.2, {"url": "={{ $json.renderer_url }}/topics/next", **HDR_RENDER, "options": {}}, [440, 300], credentials=CRED_RENDER),
     node("Thema vorhanden?", "n8n-nodes-base.if", 2.2, {"conditions": {"options": {"caseSensitive": True, "leftValue": "", "typeValidation": "loose", "version": 2},
         "conditions": [{"id": "c1", "leftValue": "={{ $json.empty }}", "rightValue": "", "operator": {"type": "boolean", "operation": "false", "singleValue": True}}], "combinator": "and"}, "options": {}}, [660, 300]),

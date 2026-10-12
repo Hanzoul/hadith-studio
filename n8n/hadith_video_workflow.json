@@ -28,13 +28,13 @@
       {
        "id": "a1",
        "name": "renderer_url",
-       "value": "http://hadith-renderer:8080",
+       "value": "https://hadith.lehrer-anzoul.de",
        "type": "string"
       },
       {
        "id": "a2",
        "name": "series",
-       "value": "أحاديث نبوية",
+       "value": "حديث بالقلم",
        "type": "string"
       },
       {
@@ -76,7 +76,7 @@
       {
        "id": "a9",
        "name": "hashtags",
-       "value": "#حديث #السنة_النبوية #إسلام #تذكير",
+       "value": "#حديث_بالقلم #أحاديث_نبوية #السنة_النبوية #بالدارجة #تذكير",
        "type": "string"
       }
      ]
