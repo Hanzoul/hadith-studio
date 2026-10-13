@@ -63,18 +63,50 @@ def prepare_audio(job, req):
     return round(info.frames / info.samplerate, 2)
 
 
+# ---------------------------------------------------------------- languages
+LANGS = {
+    "ar": {"name": "Arabic (Moroccan Darija / MSA)", "rtl": True},
+    "fr": {"name": "French", "rtl": False}, "de": {"name": "German", "rtl": False}, "en": {"name": "English", "rtl": False},
+    "es": {"name": "Spanish", "rtl": False}, "it": {"name": "Italian", "rtl": False}, "nl": {"name": "Dutch", "rtl": False},
+    "tr": {"name": "Turkish", "rtl": False}, "id": {"name": "Indonesian", "rtl": False}, "ms": {"name": "Malay", "rtl": False},
+    "pt": {"name": "Portuguese", "rtl": False}, "bs": {"name": "Bosnian", "rtl": False}, "sq": {"name": "Albanian", "rtl": False},
+}
+UI = {  # small fixed texts on stories / vertical video / descriptions
+    "ar": {"story": "ستوري {k} من {n}", "share": "شارِكها مع من تحب", "chapters": "⏱️ الفصول:",
+           "brand": "✍️ حديث بالقلم: أحاديث النبي ﷺ بالدارجة، مرسومة باليد.",
+           "note": "📌 كنحرصو نذكرو مصدر كل حديث. إلا لاحظتي شي خطأ كتب لينا فالتعليقات، وجزاك الله خيراً."},
+    "fr": {"story": "Story {k} / {n}", "share": "Partage-la avec ceux que tu aimes", "chapters": "⏱️ Chapitres :",
+           "brand": "✍️ حديث بالقلم / Hadith bil-Qalam : les paroles du Prophète ﷺ, expliquées et dessinées à la main.",
+           "note": "📌 Nous indiquons toujours la source de chaque hadith. Si tu remarques une erreur, écris-le en commentaire."},
+    "de": {"story": "Story {k} / {n}", "share": "Teile es mit Menschen, die du liebst", "chapters": "⏱️ Kapitel:",
+           "brand": "✍️ حديث بالقلم / Hadith bil-Qalam: Worte des Propheten ﷺ, erklärt und von Hand gezeichnet.",
+           "note": "📌 Wir nennen bei jedem Hadith die Quelle. Wenn dir ein Fehler auffällt, schreib es in die Kommentare."},
+    "en": {"story": "Story {k} / {n}", "share": "Share it with someone you love", "chapters": "⏱️ Chapters:",
+           "brand": "✍️ حديث بالقلم / Hadith bil-Qalam: the words of the Prophet ﷺ, explained and drawn by hand.",
+           "note": "📌 We always cite the source of each hadith. If you spot a mistake, please tell us in the comments."},
+}
+
+
+def lang_of(req):
+    l = (req.get("language") or "ar").lower()[:2]
+    return l if l in LANGS else "en"
+
+
+def ui(lang):
+    return UI.get(lang, UI["en"])
+
+
 # ---------------------------------------------------------------- transcription (timing only)
-_REC = None
+_REC = {}
 
 
 def transcribe(job, language="ar"):
-    global _REC
     import sherpa_onnx as so
     d = job.dir
     sh("ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", str(d / "audio.wav"), "-ar", "16000", "-ac", "1", str(d / "a16.wav"))
     M = MODELS / "sherpa-onnx-whisper-small"
-    if _REC is None:
-        _REC = so.OfflineRecognizer.from_whisper(encoder=str(M / "small-encoder.int8.onnx"), decoder=str(M / "small-decoder.int8.onnx"), tokens=str(M / "small-tokens.txt"), language=language, task="transcribe", num_threads=max(1, os.cpu_count() or 2))
+    if language not in _REC:
+        _REC[language] = so.OfflineRecognizer.from_whisper(encoder=str(M / "small-encoder.int8.onnx"), decoder=str(M / "small-decoder.int8.onnx"), tokens=str(M / "small-tokens.txt"), language=language, task="transcribe", num_threads=max(1, os.cpu_count() or 2))
     cfg = so.VadModelConfig()
     cfg.silero_vad.model = str(MODELS / "silero_vad.onnx")
     cfg.silero_vad.min_silence_duration = 0.35
@@ -89,9 +121,9 @@ def transcribe(job, language="ar"):
             s = vad.front
             st = s.start / sr
             seg = np.array(s.samples, dtype=np.float32)
-            r = _REC.create_stream()
+            r = _REC[language].create_stream()
             r.accept_waveform(sr, np.concatenate([seg, np.zeros(int(.4 * sr), dtype=np.float32)]))
-            _REC.decode_stream(r)
+            _REC[language].decode_stream(r)
             out.append({"s": round(st, 2), "e": round(st + len(seg) / sr, 2), "t": r.result.text.strip()})
             vad.pop()
 
@@ -126,6 +158,13 @@ def claude(system, messages, max_tokens=32000):
     return "".join(text)
 
 
+def fix_dir(js, lang):
+    """non-Arabic films must write left-to-right, even if the model forgot the line"""
+    if not LANGS.get(lang, {"rtl": False})["rtl"] and "TEXT_DIR" not in js.split("\n", 3)[0] + js[:300]:
+        js = "TEXT_DIR = 'ltr';\n" + js
+    return js
+
+
 def extract_js(s):
     m = re.search(r"```(?:js|javascript)?\s*\n(.*?)```", s, re.S)
     return (m.group(1) if m else s).strip()
@@ -135,13 +174,27 @@ def scenes_system():
     return (BASE / "prompts" / "scenes_system.md").read_text() + "\n```js\n" + (KIT / "scenes_example.js").read_text() + "\n```\n"
 
 
+def lang_rules(lang):
+    if LANGS[lang]["rtl"]:
+        return ""
+    n = LANGS[lang]["name"]
+    return (f"\n\n## LANGUAGE OVERRIDE: this film is in {n} (left-to-right). These rules replace the Arabic-specific rules above:\n"
+            f"- The first line of scenes.js is exactly: TEXT_DIR = 'ltr';\n"
+            f"- All on-screen texts AND the scene title/desc/hand storyboard strings are in {n}, taken from the script.\n"
+            "- Text is written left-to-right. Default font is the handwriting font (omit `font`); use font:'amiri' only for the hadith/Quran quotation lines and their source.\n"
+            "- Width estimate for Latin text ≈ 0.48·size per character. Keep each line ≤ ~55 chars at size 46, ≤ ~30 at size 70.\n"
+            "- Lists use align:'left' with the check mark left of the text.\n"
+            "- Do not write Arabic on screen unless the script itself quotes Arabic. You may write ﷺ after the Prophet's name.\n")
+
+
 def write_scenes(job, req, segments, duration):
-    user = (f"Title: {req.get('title','')}\nAudio duration: {duration} s (last scene must end at {duration}).\n\n"
+    lang = lang_of(req)
+    user = (f"Language: {LANGS[lang]['name']}\nTitle: {req.get('title','')}\nAudio duration: {duration} s (last scene must end at {duration}).\n\n"
             f"## Script (exact wording)\n{req.get('script','')}\n\n## Timed transcript (timing only)\n{segments}\n\n"
-            "Write scenes.js now.")
+            "Write scenes.js now." + lang_rules(lang))
     msgs = [{"role": "user", "content": user}]
     out = claude(scenes_system(), msgs)
-    js = extract_js(out)
+    js = fix_dir(extract_js(out), lang)
     (job.dir / "scenes.js").write_text(js)
     return js, msgs + [{"role": "assistant", "content": out}]
 
@@ -151,11 +204,12 @@ def build_page(job):
     eng = "\n".join((KIT / f).read_text() for f in ["engine.js", "hand.js", "assets.js", "helpers.js"])
     scenes = (job.dir / "scenes.js").read_text()
     ff = "".join(f'@font-face{{font-family:"{fam}";font-weight:{w};src:url(file://{KIT}/fonts/{f})}}' for fam, w, f in [
-        ("Amiri", 400, "Amiri-Regular.ttf"), ("Amiri", 700, "Amiri-Bold.ttf"), ("Aref Ruqaa", 400, "ArefRuqaa-Regular.ttf"), ("Aref Ruqaa", 700, "ArefRuqaa-Bold.ttf")])
+        ("Amiri", 400, "Amiri-Regular.ttf"), ("Amiri", 700, "Amiri-Bold.ttf"), ("Aref Ruqaa", 400, "ArefRuqaa-Regular.ttf"), ("Aref Ruqaa", 700, "ArefRuqaa-Bold.ttf"),
+        ("Kalam", 400, "Kalam-Regular.ttf"), ("Kalam", 700, "Kalam-Bold.ttf")])
     html = f"""<!doctype html><html><head><meta charset="utf-8"><style>{ff}html,body{{margin:0;background:#f3ead6}}</style></head>
 <body><canvas id="cv" width="1920" height="1080"></canvas>
 <script>{eng}</script><script>{scenes}</script>
-<script>(async()=>{{const L=['700 64px "Aref Ruqaa"','400 64px "Aref Ruqaa"','700 64px "Amiri"','400 64px "Amiri"'].map(f=>document.fonts.load(f,'استر').catch(()=>{{}}));
+<script>(async()=>{{const L=['700 64px "Aref Ruqaa"','400 64px "Aref Ruqaa"','700 64px "Amiri"','400 64px "Amiri"','700 64px "Kalam"'].map(f=>document.fonts.load(f,'استر Aä').catch(()=>{{}}));
 await Promise.race([Promise.all(L),new Promise(r=>setTimeout(r,8000))]);
 try{{buildFilm();initRenderer(document.getElementById('cv'));window.renderAt=t=>render(CX,t);window.__ready=true}}catch(e){{window.__error=String(e&&e.stack||e)}}}})();</script></body></html>"""
     (job.dir / "render.html").write_text(html)
@@ -241,8 +295,9 @@ def render_video(job, duration):
 STORY_HTML = """<html><head><meta charset="utf-8"><style>
 @font-face{font-family:"Amiri";font-weight:700;src:url(file://KIT/fonts/Amiri-Bold.ttf)}
 @font-face{font-family:"Aref Ruqaa";font-weight:700;src:url(file://KIT/fonts/ArefRuqaa-Bold.ttf)}
+@font-face{font-family:"Kalam";font-weight:700;src:url(file://KIT/fonts/Kalam-Bold.ttf)}
 html,body{margin:0;width:1080px;height:1920px}
-.pg{position:absolute;inset:0;background:#f3ead6;direction:rtl;font-family:"Aref Ruqaa",serif;color:#1f1d1a}
+.pg{position:absolute;inset:0;background:#f3ead6;direction:DIR;font-family:FONT;color:#1f1d1a}
 .pg:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(90,70,40,0) 55%,rgba(90,70,40,.18) 100%)}
 .num{position:absolute;top:170px;right:90px;left:90px;display:flex;justify-content:space-between;font-family:"Amiri",serif;font-size:34px;color:#2e5a46}
 .ttl{position:absolute;top:250px;right:70px;left:70px;text-align:center;font-size:92px;line-height:1.25;font-weight:700}
@@ -250,7 +305,13 @@ html,body{margin:0;width:1080px;height:1920px}
 .take{position:absolute;top:1340px;right:80px;left:80px;text-align:center;font-size:56px;line-height:1.5;color:#2e5a46;font-weight:700}
 .ft{position:absolute;bottom:150px;right:0;left:0;text-align:center;font-size:40px;color:#5f5a50}
 </style></head><body><div class="pg"><div class="num"><span>NUM</span><span>SERIES</span></div><div class="ttl">TITLE</div>
-<div class="frame"></div><div class="take">TAKE</div><div class="ft">شارِكها مع من تحب</div></div></body></html>"""
+<div class="frame"></div><div class="take">TAKE</div><div class="ft">SHARE</div></div></body></html>"""
+
+
+def story_html(lang):
+    rtl = LANGS[lang]["rtl"]
+    return (STORY_HTML.replace("DIR", "rtl" if rtl else "ltr")
+            .replace("FONT", '"Aref Ruqaa",serif' if rtl else '"Kalam","Amiri",cursive').replace("SHARE", ui(lang)["share"]))
 
 
 def group_stories(scenes, duration, lo=25, hi=58):
@@ -276,7 +337,7 @@ def group_stories(scenes, duration, lo=25, hi=58):
     return groups
 
 
-def make_stories(job, scenes, duration, series):
+def make_stories(job, scenes, duration, series, lang="ar"):
     from playwright.sync_api import sync_playwright
     d = job.dir / "stories"
     d.mkdir(exist_ok=True)
@@ -289,7 +350,7 @@ def make_stories(job, scenes, duration, series):
         for k, g in enumerate(groups, 1):
             title = g["scenes"][0]["title"]
             take = g["scenes"][-1]["title"] if len(g["scenes"]) > 1 else ""
-            html = STORY_HTML.replace("KIT", str(KIT)).replace("NUM", f"ستوري {k} من {len(groups)}").replace("SERIES", esc(series)).replace("TITLE", esc(title)).replace("TAKE", esc(take))
+            html = story_html(lang).replace("KIT", str(KIT)).replace("NUM", ui(lang)["story"].format(k=k, n=len(groups))).replace("SERIES", esc(series)).replace("TITLE", esc(title)).replace("TAKE", esc(take))
             (d / "_bg.html").write_text(html)
             pg.goto(f"file://{d}/_bg.html")
             pg.evaluate("document.fonts.ready")
@@ -311,12 +372,12 @@ def make_stories(job, scenes, duration, series):
     return meta
 
 
-def make_vertical(job, title, series, duration):
+def make_vertical(job, title, series, duration, lang="ar"):
     """Full film as 9:16 (Reels / TikTok): title on top, film in the middle, series name below."""
     from playwright.sync_api import sync_playwright
     d = job.dir
     esc = lambda s: s.replace("&", "&amp;").replace("<", "&lt;")
-    html = STORY_HTML.replace("KIT", str(KIT)).replace("NUM", "").replace("SERIES", "").replace("TITLE", esc(title)).replace("TAKE", esc(series))
+    html = story_html(lang).replace("KIT", str(KIT)).replace("NUM", "").replace("SERIES", "").replace("TITLE", esc(title)).replace("TAKE", esc(series))
     (d / "_v.html").write_text(html)
     with sync_playwright() as pw:
         b = pw.chromium.launch(args=["--allow-file-access-from-files"])
@@ -362,22 +423,27 @@ def social_pack(job, req, scenes, duration):
     chapters = chapters_from(scenes, duration)
     data = {}
     try:
-        out = claude(SOCIAL_PROMPT, [{"role": "user", "content": f"Title: {req.get('title','')}\n\nScript:\n{req.get('script','')}"}], max_tokens=4000)
+        lang = lang_of(req)
+        extra = "" if lang == "ar" else (f"\n\nLANGUAGE OVERRIDE: the video is in {LANGS[lang]['name']}. Write ALL texts (titles, intro, call to action, tags, captions, pinned comment) "
+                                         f"in {LANGS[lang]['name']} instead of Darija; hashtags in {LANGS[lang]['name']} plus #HadithBilQalam (no Arabic hashtags needed).")
+        out = claude(SOCIAL_PROMPT + extra, [{"role": "user", "content": f"Title: {req.get('title','')}\n\nScript:\n{req.get('script','')}"}], max_tokens=4000)
         m = re.search(r"\{.*\}", out, re.S)
         data = json.loads(m.group(0)) if m else {}
     except Exception as e:
         data = {"error": str(e)[:300]}
+    U = ui(lang_of(req))
     tags = " ".join(data.get("hashtags", []) or ["#حديث_بالقلم"])
-    desc = "\n".join(filter(None, [data.get("youtube_intro", ""), "", "📖 " + data.get("hadith_block", "") if data.get("hadith_block") else "", "", "⏱️ الفصول:", chapters, "",
-                                   data.get("call_to_action", ""), "", "✍️ حديث بالقلم: أحاديث النبي ﷺ بالدارجة، مرسومة باليد.",
-                                   "📌 كنحرصو نذكرو مصدر كل حديث. إلا لاحظتي شي خطأ كتب لينا فالتعليقات، وجزاك الله خيراً.", "", tags]))
+    desc = "\n".join(filter(None, [data.get("youtube_intro", ""), "", "📖 " + data.get("hadith_block", "") if data.get("hadith_block") else "", "", U["chapters"], chapters, "",
+                                   data.get("call_to_action", ""), "", U["brand"], U["note"], "", tags]))
     data["chapters"] = chapters
     data["youtube_description"] = desc
     (job.dir / "social.json").write_text(json.dumps(data, ensure_ascii=False, indent=1))
-    md = [f"# {req.get('title','')}", "", "## عناوين يوتيوب", *[f"{i+1}. {t}" for i, t in enumerate(data.get("youtube_titles", []))],
-          "", "## وصف يوتيوب", "```", desc, "```", "", "## التاغات", "```", ", ".join(data.get("tags", [])), "```",
-          "", "## التعليق المثبت", data.get("pinned_comment", ""), "", "## إنستغرام", "```", data.get("instagram_caption", ""), "```",
-          "", "## تيكتوك", "```", data.get("tiktok_caption", ""), "```", "", "## فيسبوك", "```", data.get("facebook_caption", ""), "```"]
+    H = (["عناوين يوتيوب", "وصف يوتيوب", "التاغات", "التعليق المثبت", "إنستغرام", "تيكتوك", "فيسبوك"] if lang_of(req) == "ar"
+         else ["YouTube-Titel / titles", "YouTube-Beschreibung / description", "Tags", "Angepinnter Kommentar / pinned comment", "Instagram", "TikTok", "Facebook"])
+    md = [f"# {req.get('title','')}", "", f"## {H[0]}", *[f"{i+1}. {t}" for i, t in enumerate(data.get("youtube_titles", []))],
+          "", f"## {H[1]}", "```", desc, "```", "", f"## {H[2]}", "```", ", ".join(data.get("tags", [])), "```",
+          "", f"## {H[3]}", data.get("pinned_comment", ""), "", f"## {H[4]}", "```", data.get("instagram_caption", ""), "```",
+          "", f"## {H[5]}", "```", data.get("tiktok_caption", ""), "```", "", f"## {H[6]}", "```", data.get("facebook_caption", ""), "```"]
     (job.dir / "social.md").write_text("\n".join(md))
     return data
 
@@ -391,12 +457,12 @@ def run_job(job):
     duration = prepare_audio(job, req)
     st["duration"] = duration
     if req.get("scenes_js"):
-        (job.dir / "scenes.js").write_text(req["scenes_js"])
+        (job.dir / "scenes.js").write_text(fix_dir(req["scenes_js"], lang_of(req)))
         convo = None
         log(job, "scenes.js übernommen", 0.1)
     else:
         log(job, "Transkription (Timing)", 0.03)
-        segs = transcribe(job, req.get("language", "ar"))
+        segs = transcribe(job, lang_of(req))
         log(job, f"Szenen schreiben mit {CLAUDE_MODEL}", 0.08)
         _, convo = write_scenes(job, req, segs, duration)
     build_page(job)
@@ -409,7 +475,7 @@ def run_job(job):
         convo.append({"role": "user", "content": f"The engine reported these problems:\n{problems}\n\nReturn the complete corrected scenes.js (same rules)."})
         out = claude(scenes_system(), convo)
         convo.append({"role": "assistant", "content": out})
-        (job.dir / "scenes.js").write_text(extract_js(out))
+        (job.dir / "scenes.js").write_text(fix_dir(extract_js(out), lang_of(req)))
         build_page(job)
         res = asyncio.run(check_page(job))
     if res["errors"]:
@@ -425,11 +491,11 @@ def run_job(job):
     files += ["social.json", "social.md"]
     if req.get("vertical", True):
         log(job, "Hochformat-Version (Reels/TikTok)", 0.86)
-        make_vertical(job, req.get("title", ""), req.get("series") or "", duration)
+        make_vertical(job, req.get("title", ""), req.get("series") or "", duration, lang_of(req))
         files.append("video_vertical.mp4")
     if req.get("stories", True):
         log(job, "Stories schneiden", 0.88)
-        meta = make_stories(job, res["scenes"], duration, req.get("series") or req.get("title", ""))
+        meta = make_stories(job, res["scenes"], duration, req.get("series") or req.get("title", ""), lang_of(req))
         st["stories"] = meta
         files += [f"stories/story_{m['n']:02d}.mp4" for m in meta]
     for f in ["a16.wav", "audio.pcm", "render.html"]:

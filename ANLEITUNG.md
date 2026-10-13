@@ -123,6 +123,14 @@ Dateien werden nach `KEEP_DAYS` Tagen gelöscht (Standard 7).
 
 **Dauer:** Ein 5-Minuten-Video braucht auf KVM 2 grob 20–25 Minuten, auf KVM 4 etwa 10–15 Minuten. Es wird immer nur ein Video gleichzeitig gerendert; weitere warten in der Warteschlange.
 
+## 5b. Mehrere Sprachen (ein Renderer für alle)
+Der Renderer kann jede Sprache. Im Auftrag (`POST /jobs`) steuert das Feld **`language`** alles:
+- `ar` (Standard): Arabisch/Darija, Schrift von rechts nach links (Aref Ruqaa / Amiri);
+- `de`, `fr`, `en`, `es`, `it`, `nl`, `tr`, `id`, `ms`, `pt`, `bs`, `sq`: Schrift von links nach rechts in Handschrift (Kalam), Hadith-Zitat in Amiri.
+
+Sprache des Transkripts, Bildschirmtexte, Storyboard, Hochformat, Stories, Social-Texte und Kapitel richten sich automatisch danach.
+In n8n: im Kästchen „Audio zusammenfügen“ `language: 'ar'` durch z. B. `language: 'de'` ersetzen (am besten eine Kopie des Workflows pro Sprache).
+
 ## 6. Kosten (grob)
 Pro Video ein Skript-Aufruf und ein Szenen-Aufruf an Claude, plus Gemini TTS (nach Verbrauch). Bitte in der Anthropic-Konsole ein **Ausgabenlimit** setzen.
 
